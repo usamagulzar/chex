@@ -1,0 +1,92 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function googleSignedIn() {
+      return signedIn() && request.auth.token.firebase.sign_in_provider == 'google.com';
+    }
+
+    function safeUsername(value) {
+      return value is string && value.matches('^[A-Za-z0-9_.]{6,20}$');
+    }
+
+    function safeLowerUsername(value) {
+      return value is string && value.matches('^[a-z0-9_.]{6,20}$');
+    }
+
+    function safeChallengeCreate(data) {
+      return data.keys().hasOnly(['sender', 'senderUid', 'target', 'targetUid', 'status', 'variants', 'colorReq', 'clockConfig', 'createdAt'])
+        && safeLowerUsername(data.sender)
+        && data.senderUid is string
+        && safeLowerUsername(data.target)
+        && (data.targetUid == null || data.targetUid is string)
+        && data.status == 'pending'
+        && data.variants is map
+        && data.colorReq in ['w', 'b', 'random']
+        && data.clockConfig is map
+        && data.createdAt is timestamp;
+    }
+
+    function safeChallengeUpdate(data) {
+      return data.keys().hasOnly(['sender', 'senderUid', 'target', 'targetUid', 'status', 'variants', 'colorReq', 'clockConfig', 'createdAt', 'joinerUid'])
+        && safeLowerUsername(data.sender)
+        && data.senderUid is string
+        && safeLowerUsername(data.target)
+        && (data.targetUid == null || data.targetUid is string)
+        && data.status in ['accepted', 'declined']
+        && data.variants is map
+        && data.colorReq in ['w', 'b', 'random']
+        && data.clockConfig is map
+        && data.createdAt is timestamp
+        && data.joinerUid is string;
+    }
+
+    match /usernames/{usernameKey} {
+      allow read: if true;
+      allow create: if googleSignedIn()
+        && usernameKey.matches('^[a-z0-9_.]{6,20}$')
+        && request.resource.data.keys().hasOnly(['uid', 'display'])
+        && request.resource.data.uid == request.auth.uid
+        && safeUsername(request.resource.data.display);
+      allow update, delete: if false;
+    }
+
+    match /users/{uid} {
+      allow read: if googleSignedIn() && request.auth.uid == uid;
+      allow create, update: if googleSignedIn()
+        && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['username'])
+        && safeUsername(request.resource.data.username);
+      allow delete: if googleSignedIn() && request.auth.uid == uid;
+    }
+
+    match /challenges/{challengeId} {
+      allow read: if signedIn();
+      allow create: if safeChallengeCreate(request.resource.data)
+        && request.resource.data.senderUid == request.auth.uid;
+      allow update: if safeChallengeUpdate(request.resource.data)
+        && safeChallengeUpdate(resource.data)
+        && resource.data.sender == request.resource.data.sender
+        && resource.data.senderUid == request.resource.data.senderUid
+        && resource.data.target == request.resource.data.target
+        && resource.data.targetUid == request.resource.data.targetUid
+        && resource.data.variants == request.resource.data.variants
+        && resource.data.colorReq == request.resource.data.colorReq
+        && resource.data.clockConfig == request.resource.data.clockConfig
+        && resource.data.createdAt == request.resource.data.createdAt
+        && request.resource.data.joinerUid == request.auth.uid
+        && resource.data.status == 'pending'
+        && (resource.data.targetUid == null || resource.data.targetUid == request.auth.uid);
+      allow delete: if signedIn();
+    }
+
+    match /games/{gameId} {
+      allow read: if true;
+      allow write: if false;
+    }
+  }
+}
