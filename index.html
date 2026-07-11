@@ -3,23 +3,38 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="Chessology -- a browser chess app with multiplayer, Stockfish analysis, and four custom variants: Dice Chess, Fog of War, Draft Mode, and Identity Theft.">
-<meta property="og:title" content="Chessology">
-<meta property="og:description" content="Play chess in your browser. Challenge a friend peer-to-peer, try custom variants, and analyse with Stockfish 18 -- no install required.">
-<meta property="og:type" content="website">
-<meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Chessology">
-<meta name="twitter:description" content="Browser chess with multiplayer, Stockfish analysis, and four custom variants.">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>♟</text></svg>">
+
+<!-- Primary Meta Tags -->
 <title>Chex</title>
+<meta name="title" content="Chex">
+<meta name="description" content="A Modern Chess Experience. Play offline, challenge friends, explore different variants, and analyze your games.">
+
+<!-- Open Graph / Facebook / LinkedIn -->
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://ugseecs.github.io/chex/">
+<meta property="og:title" content="Chex">
+<meta property="og:description" content="A Modern Chess Experience. Play offline, challenge friends, explore different variants, and analyze your games.">
+<!-- Ensure your image is uploaded to this exact path -->
+<meta property="og:image" content="https://ugseecs.github.io/chex/preview.png">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:url" content="https://ugseecs.github.io/chex/">
+<meta name="twitter:title" content="Chex">
+<meta name="twitter:description" content="A Modern Chess Experience. Play offline, challenge friends, explore different variants, and analyze your games.">
+<!-- Ensure your image is uploaded to this exact path -->
+<meta name="twitter:image" content="https://ugseecs.github.io/chex/preview.png">
+
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>♟</text></svg>">
+
 <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-database-compat.js"></script>
+
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-
 <div class="game-wrap">
 
   <!-- Left Panel -->
