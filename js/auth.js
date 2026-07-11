@@ -45,7 +45,7 @@ window.auth = {
     let storedUsername = localStorage.getItem('chessology_username');
     if (!storedUsername) {
       // 2. Generate a random guest username if none exists
-      storedUsername = 'Guest' + Math.floor(Math.random() * 10000);
+      storedUsername = 'Guest' + Math.random().toString(36).substring(2, 8).toUpperCase();
       localStorage.setItem('chessology_username', storedUsername);
     }
     this.username = storedUsername;
@@ -71,7 +71,7 @@ window.auth = {
         if (user.isAnonymous) {
           let currentName = localStorage.getItem('chessology_username') || '';
           if (!currentName.toLowerCase().startsWith('guest')) {
-            const guestName = 'Guest' + Math.floor(Math.random() * 10000);
+            const guestName = Math.random().toString(36).substring(2, 8).toUpperCase();
             this.setUsername(guestName);
           }
 
