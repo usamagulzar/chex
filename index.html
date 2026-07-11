@@ -560,10 +560,8 @@
         localStorage.setItem('chexThemeColor', color);
       } catch (e) {}
 
-      // Repaint the board immediately so the squares pick up the new theme.
-      if (window.app && typeof window.app.renderBoard === 'function') {
-        window.app.renderBoard();
-      }
+      if (window.app && typeof window.app.renderBoard === 'function') window.app.renderBoard();
+      if (window.analysis && typeof window.analysis.drawArrow === 'function') window.analysis.drawArrow();
     }
 
     document.addEventListener('DOMContentLoaded', () => {
