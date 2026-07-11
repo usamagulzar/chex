@@ -106,7 +106,7 @@ window.auth = {
         let currentName = localStorage.getItem('chessology_username') || '';
         if (!currentName.toLowerCase().startsWith('guest')) {
           console.warn("Unauthenticated user detected with custom username. Reverting to Guest.");
-          const guestName = 'Guest' + Math.floor(Math.random() * 10000);
+          const guestName = Math.random().toString(36).substring(2, 8).toUpperCase();
           this.setUsername(guestName);
         }
 
@@ -156,7 +156,7 @@ window.auth = {
     await auth.signOut();
     await this.ensureAnonymousAuth();
     // Revert to a guest username
-    const guestName = 'Guest' + Math.floor(Math.random() * 10000);
+    const guestName = Math.random().toString(36).substring(2, 8).toUpperCase();
     this.setUsername(guestName);
     if (window.ui && typeof window.ui.syncAuthUI === 'function') {
       window.ui.syncAuthUI();
