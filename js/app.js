@@ -343,42 +343,47 @@ if ((isEvalVisible || isBestMoveVisible) && window.analysis && !window.variants.
   },
 
 
-  renderBars() {
-    // Hide active players dots on draft
-    const isDrafting = window.variants.isDraftActive;
-    document.getElementById('barW').classList.toggle('active', turn === 'w' && !over && !isDrafting);
-    document.getElementById('barB').classList.toggle('active', turn === 'b' && !over && !isDrafting);
-
-    const wc = moveHistory.filter(m => m.cap && m.turn === 'w').map(m => m.cap);
-    const bc = moveHistory.filter(m => m.cap && m.turn === 'b').map(m => m.cap);
-
-    const wm = wc.reduce((s, p) => s + (PIECE_VALUES[p.type] || 0), 0);
-    const bm = bc.reduce((s, p) => s + (PIECE_VALUES[p.type] || 0), 0);
-
-    const wCounts = { P: 0, N: 0, B: 0, R: 0, Q: 0 };
-    const bCounts = { P: 0, N: 0, B: 0, R: 0, Q: 0 };
-    wc.forEach(p => wCounts[p.type]++);
-    bc.forEach(p => bCounts[p.type]++);
-
-    const types = ['P', 'N', 'B', 'R', 'Q'];
-    let netW = [], netB = [];
-
-    types.forEach(t => {
-      const diff = wCounts[t] - bCounts[t];
-      if (diff > 0) {
-        for (let i = 0; i < diff; i++) netW.push({ color: 'b', type: t });
-      } else if (diff < 0) {
-        for (let i = 0; i < Math.abs(diff); i++) netB.push({ color: 'w', type: t });
-      }
-    });
-
-    document.getElementById('capW').innerHTML = netW.map(p => `<span>${SVG[p.color + p.type]}</span>`).join('');
-    document.getElementById('scoreW').textContent = wm > bm ? '+' + (wm - bm) : '';
-
-    document.getElementById('capB').innerHTML = netB.map(p => `<span>${SVG[p.color + p.type]}</span>`).join('');
-    document.getElementById('scoreB').textContent = bm > wm ? '+' + (bm - wm) : '';
-  },
-
+	renderBars() {
+	  const isDrafting = window.variants.isDraftActive;
+	  document.getElementById('barW').classList.toggle('active', turn === 'w' && !over && !isDrafting);
+	  document.getElementById('barB').classList.toggle('active', turn === 'b' && !over && !isDrafting);
+	
+	  // Tally material from pieces currently on the board (correctly reflects promotions)
+	  const wCounts = { P: 0, N: 0, B: 0, R: 0, Q: 0 };
+	  const bCounts = { P: 0, N: 0, B: 0, R: 0, Q: 0 };
+	
+	  for (let r = 0; r < board.length; r++) {
+	    for (let c = 0; c < board[r].length; c++) {
+	      const piece = board[r][c];
+	      if (!piece) continue;
+	      const pTypes = piece.types || [piece.type]; // supports composite pieces
+	      const counts = piece.color === 'w' ? wCounts : bCounts;
+	      pTypes.forEach(t => { if (counts[t] !== undefined) counts[t]++; });
+	    }
+	  }
+	
+	  const wm = Object.keys(wCounts).reduce((s, t) => s + wCounts[t] * (PIECE_VALUES[t] || 0), 0);
+	  const bm = Object.keys(bCounts).reduce((s, t) => s + bCounts[t] * (PIECE_VALUES[t] || 0), 0);
+	
+	  const types = ['P', 'N', 'B', 'R', 'Q'];
+	  let netW = [], netB = [];
+	
+	  types.forEach(t => {
+	    const diff = bCounts[t] - wCounts[t]; // white is missing this many of black's type t
+	    if (diff > 0) {
+	      for (let i = 0; i < diff; i++) netW.push({ color: 'b', type: t });
+	    } else if (diff < 0) {
+	      for (let i = 0; i < Math.abs(diff); i++) netB.push({ color: 'w', type: t });
+	    }
+	  });
+	
+	  document.getElementById('capW').innerHTML = netW.map(p => `<span>${SVG[p.color + p.type]}</span>`).join('');
+	  document.getElementById('scoreW').textContent = wm > bm ? '+' + (wm - bm) : '';
+	
+	  document.getElementById('capB').innerHTML = netB.map(p => `<span>${SVG[p.color + p.type]}</span>`).join('');
+	  document.getElementById('scoreB').textContent = bm > wm ? '+' + (bm - wm) : '';
+	},
+	
   renderHist() {
     const body = document.getElementById('histBody'); body.innerHTML = '';
     const activeIdx = viewIndex - 1;
