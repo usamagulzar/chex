@@ -1104,7 +1104,7 @@ if ((isEvalVisible || isBestMoveVisible) && window.analysis && !window.variants.
     const currFen = boardToFen(board, turn, castling, enPassantSquare);
     const counts = positionHistory();
     const isRep = counts[currFen] >= 3;
-    const isInsuff = isInsufficientMaterial(board);
+	const isInsuff = !window.variants.fogOfWarEnabled && isInsufficientMaterial(board);
 
     const san = moveToSAN({ r: fromRow, c: fromCol }, { r: toRow, c: toCol }, piece, cap, flags, bb, isMate, chk, promo, prevEnPassantSquare, prevCastlingRights);
     lastMove = { from: { r: fromRow, c: fromCol }, to: { r: toRow, c: toCol } };
