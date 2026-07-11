@@ -704,7 +704,11 @@ function importPgn(pgnStr) {
       let matched = null;
       const candidates = [];
 
-      const promoMatch = move.match(/=?\s*([QRBN])\s*[+#]?$/i);
+      const idMatch = move.match(/=([QRBNP]{2})(?=[+#]?$)/);
+      const idCode = idMatch ? idMatch[1] : null;
+      const move_ = idMatch ? move.replace(idMatch[0], '') : move;
+
+      const promoMatch = move_.match(/=?\s*([QRBN])\s*[+#]?$/i);
       const tokenPromo = promoMatch ? promoMatch[1].toUpperCase() : null;
       
       for (const mv of nxt) {
@@ -742,7 +746,7 @@ function importPgn(pgnStr) {
         const san = moveToSAN(mv.from, mv.to, piece, cap, rawFlags, bb, isMate, chk, candidatePromo);
         
         // Tier 1: normalised match (x, =, 0->O, dashes, +, #, e.p., parens all stripped)
-        if (normSan(san) === normSan(move) || san === move) {
+        if (normSan(san) === normSan(move_) || san === move_) {
           matched = { from: mv.from, to: mv.to, flags: rawFlags, promo: candidatePromo, piece, cap, san };
           break;
         }
@@ -752,10 +756,10 @@ function importPgn(pgnStr) {
       // Tier 2: fuzzy fallback - match by piece-letter + destination square only
       // Handles wrong disambiguation, completely absent/wrong capture markers, etc.
       if (!matched) {
-        const nm = normSan(move);
+        const nm = normSan(move_);
         // Destination pulled straight from coordinates (not string-sliced) so a
         // trailing promotion letter (e.g. the "Q" in "=Q") can never corrupt it.
-        const destMatch = move.match(/([a-h][1-8])(?:=?[QRBN])?[+#]?$/i);
+        const destMatch = move_.match(/([a-h][1-8])(?:=?[QRBN])?[+#]?$/i);
         const dest = destMatch ? destMatch[1].toLowerCase() : nm.slice(-2);
         const pieceLetter = /^[NBRQK]/.test(nm) ? nm[0] : 'P';
         const fuzzy = candidates.filter(c => {
@@ -772,6 +776,15 @@ function importPgn(pgnStr) {
         boardHistory.push(cloneState());
         realBoard = applyMv(realBoard, matched.from, matched.to, matched.flags, matched.promo);
 
+        if (idCode && window.variants.identityTheftEnabled && window.variants.identityTheftMode === 'append') {
+          const p = realBoard[matched.to.r][matched.to.c];
+          if (p && p.types && p.types.length > 2) {
+            p.types = idCode.split('');
+            p.types.sort((a, b) => (PIECE_VALUES[b] || 0) - (PIECE_VALUES[a] || 0));
+            p.type = p.types[0];
+          }
+        }
+        
         const { piece, cap, flags: f, from, to } = matched;
         updateCastlingAfterMove(piece, from, to);
 
