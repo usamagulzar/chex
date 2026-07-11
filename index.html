@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 
 <title>Chex</title>
 <meta name="title" content="Chex - Beyond 64 Squares">
@@ -22,6 +22,26 @@
 <meta name="twitter:image" content="https://usamagulzar.github.io/chex/preview.png">
 
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>♟</text></svg>">
+
+<!-- PWA: manifest + icons -->
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="icons/icon-16.png">
+<link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
+<link rel="mask-icon" href="icons/icon-maskable-512.png" color="#4d90f0">
+
+<!-- PWA: theming -->
+<meta name="theme-color" content="#302e2b">
+<meta name="color-scheme" content="dark">
+
+<!-- PWA: standalone / installed-app behavior -->
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Chex">
+<meta name="application-name" content="Chex">
+<meta name="msapplication-TileColor" content="#302e2b">
+<meta name="msapplication-TileImage" content="icons/icon-144.png">
 
 <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-auth-compat.js"></script>
@@ -74,6 +94,10 @@
            Sign in
          </button>
          <button class="btn" id="googleSignOutBtn" style="padding: 4px 10px; font-size: 0.7rem; min-width: unset; background: transparent; border: 1px solid var(--border); color: var(--dim); border-radius: 12px; box-shadow: none; display: none;">Sign out</button>
+         <button class="btn" id="installAppBtn" onclick="window.triggerInstallPrompt()" title="Install Chex as an app" style="padding: 4px 10px; font-size: 0.7rem; min-width: unset; background: transparent; border: 1px solid var(--border); color: var(--dim); border-radius: 12px; box-shadow: none; display: none; align-items: center; gap: 4px;">
+           <svg viewBox="0 0 24 24" width="11" height="11" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+           Install
+         </button>
        </div>
        
     </div>
@@ -485,6 +509,40 @@
     window.app.init();
     window.ui.init();
   });
+
+  // --- PWA: service worker registration ---
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').catch((err) => {
+        console.warn('Service worker registration failed:', err);
+      });
+    });
+  }
+
+  // --- PWA: capture the install prompt so we can trigger it from our own UI
+  // instead of relying on the browser's native (and easy-to-miss) mini-infobar.
+  let deferredInstallPrompt = null;
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredInstallPrompt = e;
+    const installBtn = document.getElementById('installAppBtn');
+    if (installBtn) installBtn.style.display = 'inline-flex';
+  });
+
+  window.addEventListener('appinstalled', () => {
+    deferredInstallPrompt = null;
+    const installBtn = document.getElementById('installAppBtn');
+    if (installBtn) installBtn.style.display = 'none';
+  });
+
+  window.triggerInstallPrompt = async function () {
+    if (!deferredInstallPrompt) return;
+    deferredInstallPrompt.prompt();
+    await deferredInstallPrompt.userChoice;
+    deferredInstallPrompt = null;
+    const installBtn = document.getElementById('installAppBtn');
+    if (installBtn) installBtn.style.display = 'none';
+  };
 </script>
 </body>
 </html>

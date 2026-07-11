@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chex - Offline</title>
+<style>
+  html,body{height:100%;margin:0;background:#302e2b;color:#fff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    display:flex;align-items:center;justify-content:center;text-align:center}
+  .wrap{padding:32px;max-width:360px}
+  svg{width:64px;height:64px;fill:#4d90f0;margin-bottom:16px}
+  h1{font-size:1.25rem;margin:0 0 8px}
+  p{color:#989795;font-size:.9rem;line-height:1.5;margin:0 0 20px}
+  button{background:#4d90f0;color:#fff;border:none;border-radius:8px;padding:10px 20px;font-size:.9rem;font-weight:600;cursor:pointer}
+  button:hover{filter:brightness(1.1)}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <svg viewBox="0 0 24 24"><path d="M12 2 2 7v10l10 5 10-5V7L12 2zm0 2.2 7.5 3.8-7.5 3.8-7.5-3.8L12 4.2zM4.5 9.9 11 13.2v7.5l-6.5-3.3V9.9zm9.5 10.8v-7.5l6.5-3.3v7.5L14 20.7z"/></svg>
+    <h1>You're offline</h1>
+    <p>Chex couldn't reach the network and this page hasn't been cached yet. Your board (if a game is already open) will keep working — just reconnect for multiplayer or move history sync.</p>
+    <button onclick="location.reload()">Try again</button>
+  </div>
+</body>
+</html>
