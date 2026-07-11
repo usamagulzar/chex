@@ -277,7 +277,6 @@ rollDice(color) {
 handleIdentityTheft(attacker, captured) {
     if (!this.identityTheftEnabled) return;
     if (attacker.type === 'K') return; // Kings retain their royal status and do not steal identities
-      const promoMatch = move.match(/=?\s*([QRBN])\s*[+#]?$/i);
 
     const capTypes = captured.types || [captured.type];
 
