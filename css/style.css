@@ -31,6 +31,34 @@
   --text:#ffffff;--dim:#989795;--muted:#575653;--gold:#4d90f0; 
   --sq:min(120px, calc((100vh - 104px) / 8), calc((100vw - 400px) / 8));--bsz:calc(var(--sq)*8);
 }
+
+/* Dark · Pink */
+html[data-theme="dark-pink"]{
+  --gold:#f04d90;
+  --sel-color:#f04d9077;
+  --hl-light:#f6cee3;--hl-dark:#a85c84;
+  --last-light:#f6cee3aa;--last-dark:#a85c84aa;
+}
+
+/* Light · Blue */
+html[data-theme="light-blue"]{
+  --bg:#f2efe9;--panel:#ffffff;--panel2:#f5f3ee;--border:#dcd8d0;
+  --text:#221f1c;--dim:#6b6864;--muted:#8f8b85;--gold:#3a7ce0;
+  --sq-light:#f5f3ea;--sq-dark:#6d9dc9;
+  --sel-color:#3a7ce077;
+  --hl-light:#dbeaf9;--hl-dark:#7fa8cf;
+  --last-light:#dbeaf9aa;--last-dark:#7fa8cfaa;
+}
+
+/* Light · Pink */
+html[data-theme="light-pink"]{
+  --bg:#f2efe9;--panel:#ffffff;--panel2:#f5f3ee;--border:#dcd8d0;
+  --text:#221f1c;--dim:#6b6864;--muted:#8f8b85;--gold:#e0397c;
+  --sq-light:#f5f3ea;--sq-dark:#c96d9d;
+  --sel-color:#e0397c77;
+  --hl-light:#f9dbea;--hl-dark:#cf7fac;
+  --last-light:#f9dbeaaa;--last-dark:#cf7facaa;
+}
 html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Inter',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;overflow:hidden}
 body{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;padding:12px;overflow:hidden}
 
@@ -51,14 +79,6 @@ body{display:flex;flex-direction:column;align-items:center;justify-content:cente
   color: var(--gold); /* fill="currentColor" reads this */
   flex-shrink: 0;
   display: block;
-}
-
-#brandingCard {
-  transform: translateZ(0);
-  backface-visibility: hidden;
-  isolation: isolate;
-  contain: layout style paint;
-  will-change: auto;
 }
 
 /* layout */
