@@ -87,18 +87,17 @@ window.timer = {
   },
 
   format(ms) {
-    if (!this.enabled) return "";
-    const totalSec = Math.ceil(ms / 1000);
-    const minutes = Math.floor(totalSec / 60);
-    const seconds = totalSec % 60;
-    // We only show tenths of a second when a player is in severe time trouble (under 20s).
-    // Otherwise, the constantly flashing milliseconds just induce unnecessary panic.
-    if (ms > 0 && ms < TIMER_TIMING.TENTHS_THRESHOLD_MS) {
-      const tenths = Math.floor((ms % 1000) / 100);
-      return `${minutes}:${seconds.toString().padStart(2, '0')}.${tenths}`;
-    }
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-  },
+  if (!this.enabled) return "";
+  const inTenths = ms > 0 && ms < TIMER_TIMING.TENTHS_THRESHOLD_MS;
+  const totalSec = inTenths ? Math.floor(ms / 1000) : Math.ceil(ms / 1000);
+  const minutes = Math.floor(totalSec / 60);
+  const seconds = totalSec % 60;
+  if (inTenths) {
+    const tenths = Math.floor((ms % 1000) / 100);
+    return `${minutes}:${seconds.toString().padStart(2, '0')}.${tenths}`;
+  }
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+},
 
   render() {
     const whiteClockElement = document.getElementById('clockW');
