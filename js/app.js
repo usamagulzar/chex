@@ -3114,8 +3114,8 @@ function triggerImport() {
     window.app.gameState = 'setup';
     over = false;
   } else {
+	window.app.gameState = 'playing';
     importPgn(val);
-    window.app.gameState = 'playing';
     over = true;
     window.app.isReviewMode = true;
 
