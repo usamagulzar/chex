@@ -587,6 +587,21 @@
     window.ui.init();
   });
 
+    function refreshBoardSvgs() {
+  // Nudge WebKit to recompute SVG scaling instead of holding a stale, distorted frame
+  document.querySelectorAll('.chex-logo, #arrowOverlay').forEach(el => {
+    el.style.display = 'none';
+    void el.offsetHeight; // force layout
+    el.style.display = '';
+  });
+}
+
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', refreshBoardSvgs);
+} else {
+  window.addEventListener('resize', refreshBoardSvgs);
+}
+
   // --- PWA: service worker registration ---
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
