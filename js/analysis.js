@@ -237,25 +237,40 @@ if (evalBar && evalFill && evalText && window.app && window.app.isEvalVisibleCac
       svgOverlay.insertBefore(defs, svgOverlay.firstChild);
     }
     let grad = defs.querySelector('#arrow-grad');
+    let stopStart, stopEnd;
     if (!grad) {
       grad = document.createElementNS('http://www.w3.org/2000/svg', 'linearGradient');
       grad.setAttribute('id', 'arrow-grad');
       grad.setAttribute('gradientUnits', 'userSpaceOnUse');
-      
-      const stopStart = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
+    
+      stopStart = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
       stopStart.setAttribute('offset', '0%');
-      stopStart.setAttribute('stop-color', '#4d90f0');
-      stopStart.setAttribute('stop-opacity', '0');
-      
-      const stopEnd = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
+      stopStart.setAttribute('class', 'arrow-stop-start');
+    
+      stopEnd = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
       stopEnd.setAttribute('offset', '100%');
-      stopEnd.setAttribute('stop-color', '#4d90f0');
-      stopEnd.setAttribute('stop-opacity', '0.75');
-      
+      stopEnd.setAttribute('class', 'arrow-stop-end');
+    
       grad.appendChild(stopStart);
       grad.appendChild(stopEnd);
       defs.appendChild(grad);
+    } else {
+      stopStart = grad.querySelector('.arrow-stop-start');
+      stopEnd = grad.querySelector('.arrow-stop-end');
     }
+    
+    // Always pull the current theme's accent color instead of a hardcoded hex
+    const themeGold = getComputedStyle(document.documentElement).getPropertyValue('--gold').trim() || '#4d90f0';
+    stopStart.setAttribute('stop-color', themeGold);
+    stopStart.setAttribute('stop-opacity', '0');
+    stopEnd.setAttribute('stop-color', themeGold);
+    stopEnd.setAttribute('stop-opacity', '0.75');
+    
+    // Position gradient along the vector from tail to head
+    grad.setAttribute('x1', fromPt.x);
+    grad.setAttribute('y1', fromPt.y);
+    grad.setAttribute('x2', toPt.x);
+    grad.setAttribute('y2', toPt.y);
     
     // Position gradient along the vector from tail to head
     grad.setAttribute('x1', fromPt.x);
