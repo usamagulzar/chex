@@ -38,6 +38,7 @@ html[data-theme="dark-pink"]{
   --sel-color:#f04d9077;
   --hl-light:#f6cee3;--hl-dark:#a85c84;
   --last-light:#f6cee3aa;--last-dark:#a85c84aa;
+  --sq-dark:#994b73;
 }
 
 /* Light · Blue */
@@ -678,5 +679,6 @@ body{display:flex;flex-direction:column;align-items:center;justify-content:cente
   0%, 100% { opacity: 0.6; }
   50% { opacity: 1; }
 }
+
 
 
