@@ -274,9 +274,10 @@ rollDice(color) {
   },
 
   // 4. Identity Theft morphs
-  handleIdentityTheft(attacker, captured) {
+handleIdentityTheft(attacker, captured) {
     if (!this.identityTheftEnabled) return;
     if (attacker.type === 'K') return; // Kings retain their royal status and do not steal identities
+      const promoMatch = move.match(/=?\s*([QRBN])\s*[+#]?$/i);
 
     const capTypes = captured.types || [captured.type];
 
@@ -291,15 +292,27 @@ rollDice(color) {
           attacker.types.push(t);
         }
       });
+
+      // A newly-added broad power (e.g. Queen) can retroactively make a power
+      // the piece already held (e.g. its original Bishop) redundant. Prune
+      // anything now covered by another type still in the list.
+      const merged = [...attacker.types];
+      attacker.types = merged.filter(t => !merged.some(other => other !== t && this.subsumes(other, t)));
+
       // Sort types by point value so the base type is always the strongest
       attacker.types.sort((a, b) => (PIECE_VALUES[b] || 0) - (PIECE_VALUES[a] || 0));
       attacker.type = attacker.types[0];
     }
   },
 
+  // Does holding `holder` make `type` redundant on the same piece?
+  subsumes(holder, type) {
+    if (holder === 'Q' && (type === 'B' || type === 'R' || type === 'P')) return true;
+    return false;
+  },
+
   isTypeSubsumed(type, existingTypes) {
     if (existingTypes.includes(type)) return true;
-    if (existingTypes.includes('Q') && (type === 'B' || type === 'R' || type === 'P')) return true;
-    return false;
+    return existingTypes.some(h => this.subsumes(h, type));
   }
 };
