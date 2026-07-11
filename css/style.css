@@ -51,10 +51,14 @@ body{display:flex;flex-direction:column;align-items:center;justify-content:cente
   color: var(--gold); /* fill="currentColor" reads this */
   flex-shrink: 0;
   display: block;
+}
+
+#brandingCard {
   transform: translateZ(0);
   backface-visibility: hidden;
   isolation: isolate;
-  contain: paint;
+  contain: layout style paint;
+  will-change: auto;
 }
 
 /* layout */
