@@ -700,13 +700,14 @@ function importPgn(pgnStr) {
         window.variants.allowedDiceTypes = parsedMv.dice || [];
       }
       const move = parsedMv.san;
-      const nxt = allLegalMoves(turn, realBoard, enPassantSquare, castling);
-      let matched = null;
-      const candidates = [];
 
       const idMatch = move.match(/=([QRBNP]{2})(?=[+#]?$)/);
       const idCode = idMatch ? idMatch[1] : null;
       const move_ = idMatch ? move.replace(idMatch[0], '') : move;
+
+      const nxt = allLegalMoves(turn, realBoard, enPassantSquare, castling);
+      let matched = null;
+      const candidates = [];
 
       const promoMatch = move_.match(/=?\s*([QRBN])\s*[+#]?$/i);
       const tokenPromo = promoMatch ? promoMatch[1].toUpperCase() : null;
@@ -718,7 +719,6 @@ function importPgn(pgnStr) {
         
         const cap = rawFlags.enp ? { color: turn === 'w' ? 'b' : 'w', type: 'P' } : realBoard[mv.to.r][mv.to.c];
         
-        // Only a pawn landing on the back rank can promote.
         const isPromoSquare = piece.type === 'P' && (mv.to.r === 0 || mv.to.r === 7);
         const candidatePromo = isPromoSquare ? (tokenPromo || 'Q') : null;
         
@@ -745,7 +745,6 @@ function importPgn(pgnStr) {
         
         const san = moveToSAN(mv.from, mv.to, piece, cap, rawFlags, bb, isMate, chk, candidatePromo);
         
-        // Tier 1: normalised match (x, =, 0->O, dashes, +, #, e.p., parens all stripped)
         if (normSan(san) === normSan(move_) || san === move_) {
           matched = { from: mv.from, to: mv.to, flags: rawFlags, promo: candidatePromo, piece, cap, san };
           break;
@@ -753,12 +752,8 @@ function importPgn(pgnStr) {
         candidates.push({ san, mv, rawFlags, piece, cap, promo: candidatePromo });
       }
 
-      // Tier 2: fuzzy fallback - match by piece-letter + destination square only
-      // Handles wrong disambiguation, completely absent/wrong capture markers, etc.
       if (!matched) {
         const nm = normSan(move_);
-        // Destination pulled straight from coordinates (not string-sliced) so a
-        // trailing promotion letter (e.g. the "Q" in "=Q") can never corrupt it.
         const destMatch = move_.match(/([a-h][1-8])(?:=?[QRBN])?[+#]?$/i);
         const dest = destMatch ? destMatch[1].toLowerCase() : nm.slice(-2);
         const pieceLetter = /^[NBRQK]/.test(nm) ? nm[0] : 'P';
@@ -771,7 +766,7 @@ function importPgn(pgnStr) {
           matched = { from: fz.mv.from, to: fz.mv.to, flags: fz.rawFlags, promo: fz.promo, piece: fz.piece, cap: fz.cap, san: fz.san };
         }
       }
-
+      
       if (matched) {
         boardHistory.push(cloneState());
         realBoard = applyMv(realBoard, matched.from, matched.to, matched.flags, matched.promo);
