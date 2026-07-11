@@ -29,8 +29,10 @@
   --check-light:#e74c3cbb;--check-dark:#c0392bbb;
   --bg:#302e2b;--panel:#262522;--panel2:#312e2b;--border:#3b3936;
   --text:#ffffff;--dim:#989795;--muted:#575653;--gold:#4d90f0; 
-  --sq:min(120px, calc((100vh - 104px) / 8), calc((100vw - 400px) / 8));--bsz:calc(var(--sq)*8);
-}
+  --sq:min(120px, calc((100vh - 104px) / 8), calc((100vw - 400px) / 8));
+  --sq:min(120px, calc((100dvh - 104px) / 8), calc((100vw - 400px) / 8));
+  --bsz:calc(var(--sq)*8);
+  }
 
 /* Dark · Pink */
 html[data-theme="dark-pink"]{
@@ -77,9 +79,16 @@ body{display:flex;flex-direction:column;align-items:center;justify-content:cente
 .chex-logo {
   height: 56px;
   width: auto;
-  color: var(--gold); /* fill="currentColor" reads this */
+  color: var(--gold);
   flex-shrink: 0;
   display: block;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+#arrowOverlay {
+  transform: translateZ(0);
+  backface-visibility: hidden;
 }
 
 /* layout */
