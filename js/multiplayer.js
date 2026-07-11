@@ -330,11 +330,11 @@ window.multi = {
             this.disconnectTimeRemaining = null;
             if (this.active) {
               console.warn("Opponent presence timeout. Resigning/aborting game.");
-              this.active = false;
               if (window.app && window.app.handleMultiplayerMessage) {
                 const isAbort = (window.moveHistory && window.moveHistory.length < 2);
                 window.app.handleMultiplayerMessage({ type: isAbort ? 'abort' : 'resign' });
               }
+			  this.active = false;
             }
           }
           if (window.app && window.app.renderAll) window.app.renderAll();
@@ -503,18 +503,28 @@ if (data.currentDice !== undefined && window.variants && window.variants.diceChe
     }
   },
 
-  cleanupGame() {
-    if (this.disconnectInterval) clearInterval(this.disconnectInterval);
-    this.disconnectInterval = null;
-    this.disconnectTimeRemaining = null;
-    if (this.gameId) {
-      rtdb.ref('games/' + this.gameId).off('value', this.unsubGame);
-      rtdb.ref('games/' + this.gameId + '/presence/' + this.opponentId).off('value');
-      
-      const myPresence = rtdb.ref('games/' + this.gameId + '/presence/' + this.peerId);
-      myPresence.remove();
-    }
-    this.active = false;
-    this.gameId = null;
+  // Detaches Firebase listeners + presence for the CURRENT game, without
+// touching `active`/`gameId`/`opponentId` — so Rematch still knows who
+// to challenge again. Call this the moment a game legitimately ends
+// (draw/resign/abort/timeout), so a stale presence listener from a
+// finished game can never fire against a later rematch.
+detachListeners() {
+  if (this.disconnectInterval) clearInterval(this.disconnectInterval);
+  this.disconnectInterval = null;
+  this.disconnectTimeRemaining = null;
+  if (this.gameId) {
+    rtdb.ref('games/' + this.gameId).off('value', this.unsubGame);
+    rtdb.ref('games/' + this.gameId + '/presence/' + this.opponentId).off('value');
+
+    const myPresence = rtdb.ref('games/' + this.gameId + '/presence/' + this.peerId);
+    myPresence.remove();
   }
+},
+
+// Full teardown... used when actually leaving the game (goToMenu).
+cleanupGame() {
+  this.detachListeners();
+  this.active = false;
+  this.gameId = null;
+}
 };
