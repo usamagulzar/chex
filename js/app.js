@@ -1034,8 +1034,9 @@ if ((isEvalVisible || isBestMoveVisible) && window.analysis && !window.variants.
     if (window.variants.diceChessEnabled) window.variants.rollDice(turn);
     if (window.variants.handAndBrainEnabled) window.variants.requestBrainMove(turn);
 
-    // Sync online move if multi
-    if (multi.active && turn !== multi.myColor) {
+    // Sync online move if multi; unless a power-select trim is pending,
+    // in which case showPowerSelect's confirmBtn.onclick sends it once resolved.
+    if (multi.active && turn !== multi.myColor && !window.pendingPowerSelection) {
       multi.sendMove(exportPgn());
     }
 
@@ -1233,7 +1234,7 @@ if (window.variants && window.variants.diceChessEnabled) {
       container.appendChild(btn);
     });
 
-    confirmBtn.onclick = () => {
+	  confirmBtn.onclick = () => {
       const selectedList = window.pendingPowerSelection.selected;
       document.getElementById('powerSelectOverlay').classList.remove('show');
       
@@ -1242,9 +1243,22 @@ if (window.variants && window.variants.diceChessEnabled) {
       p.types = [...selectedList];
       p.types.sort((a, b) => (PIECE_VALUES[b] || 0) - (PIECE_VALUES[a] || 0));
       p.type = p.types[0];
+
+      // Tag the move that caused this trim, so PGN can reproduce the pick
+      const idx = realMoveHistory.length - 1;
+      if (idx >= 0) {
+        const mv = realMoveHistory[idx];
+        const trail = mv.san.match(/[+#]*$/)[0];
+        mv.san = mv.san.slice(0, mv.san.length - trail.length) + '=' + p.types.join('') + trail;
+      }
       
       window.pendingPowerSelection = null;
       this.renderAll();
+
+      // Now that the pick is final, sync the move to the opponent
+      if (multi.active && multi.myColor === color) {
+        multi.sendMove(exportPgn());
+      }
 
       if (window.timer && window.timer.enabled) {
         window.timer.start(turn);
