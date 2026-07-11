@@ -283,11 +283,72 @@
     <!-- Draft Placement UI Card -->
     <div class="card" id="draftUI" style="display:none"></div>
 
-    <!-- Board Editor Placement UI Card -->
+    I took a (queen+knight) with a pawn, and it asked me to select two.but as queen already has pawn powers, so it sohuln't had asked me thatDiagnosed piece-merging logic and traced exception-handling flowDiagnosed piece-merging logic and traced exception-handling flowLooking at how the capture logic handles composite pieces—when a pawn captures a Queen and Knight together, the system checks if each captured type is already subsumed by the attacker's existing types, and it seems the logic is evaluating whether the Queen type is already present in the pawn's type list.
+The user's intuition is that since a Queen's movement encompasses both rook and bishop moves, and a bishop's diagonal capture includes the pawn's diagonal capture, the Queen should already "cover" the pawn's capture capability—so adding both Q and N separately shouldn't be necessary. The system ends up with three types (P, Q, N) and triggers the selection limit, but the user sees this as redundant since the Queen's movement already subsumes the pawn's diagonal capture.
+However, pawns have special abilities beyond pure movement geometry: promotion on reaching the last rank, en passant capture, and the double-step initial move. These aren't reducible to movement patterns alone, so they might justify keeping the pawn type separate even when a Queen is present. Now I'm looking at the isTypeSubsumed function to see how it currently handles this distinction.
+The function checks if a Queen exists in the existing types and automatically subsumes Bishops, Rooks, and Pawns. But there's a timing issue: when processing multiple captured piece types in a single capture event, the function checks against the attacker's current types array before the new type has been added. So when iterating through captured types in order (Queen first, then Knight), checking if the Queen is subsumed fails because the Queen hasn't been pushed to the attacker's types yet—the function only sees the Pawn that was already there.
+After both pieces are added, the attacker ends up with three types: Pawn, Queen, and Knight. …Show moreRead the rest of handleIdentityTheft to see if retroactive subsumption logic already existsThe pruning logic is already in the code, but the user's report suggests it's not working—they're still being asked to select duplicates. Let me trace through the logic with the specific case where attacker types are ['P'] and capability types are ['Q','N'] to see where the subsumption check might be failing. The issue might be that the user hasn't deployed this corrected version yet, or there's an older version of the function still running in their live game that lacks the pruning logic we're seeing here. So the bug at line 7684 is still present in their uploaded file, which means handleIdentityTheft would throw a ReferenceError on any capture attempt, not just this Queen+Knight scenario — yet they're reporting they got past that error to the "select two pieces" prompt, suggesting either the error is being caught somewhere silently or handleIdentityTheft is being invoked in multiple contexts where one path avoids the buggy code. I'm wondering if this code snapshot might be from before they applied the earlier deletion I suggested, since they're describing a specific in-game bug (selecting two pieces after capturing with a pawn) that suggests the code actually ran in that broken state. So the pruning logic itself is correct and should produce the right result, which means the bug the user hit must come from somewhere else—maybe the order of operations is causing the length check to fire before the subsumes filtering completes, or there's something about how capTypes are ordered that's affecting the outcome. The retroactive pruning happens after the forEach loop completes, so it should correctly reduce any 3-type intermediate states back down to 2 types, meaning the length check in execMoveDirect shouldn't trigger. But the bug might still occur if that same board position is being read again or if the captured piece's state was captured at a different point in time.
+…Show moreCheck for duplicate handleIdentityTheft/subsumes definitionsScriptThere's only one matching definition that aligns with my trace, which should correctly produce the expected output without triggering the wrong selection logic. The actual bug is that stray move line throwing an exception before the capTypes filtering and pruning logic even runs, leaving attacker.types in whatever state it started in. Now I need to trace where handleIdentityTheft gets caught or if it crashes outright.
+If that exception propagates uncaught through applyMv and up the call stack to the click handler, it would show as a browser error but the piece.type would never get modified, so no merge happens and no multi-selection trigger occurs either. That contradicts what the user reported, so either the stray line isn't actually present in their live code anymore, or the uploaded report is stale and doesn't reflect recent edits they made. Given this uncertainty, I should acknowledge the stray line still needs removal but focus on answering what's actually causing the current behavior.
+The subsumes-based pruning should prevent the multi-type trigger entirely — the forEach loop adds both Q and N to the attacker's types, but then the pruning code runs synchronously within handleIdentityTheft before applyMv returns, so by the time the length check happens in execMoveDirect, the types array is already back down to 2. That should mean no popup appears, which contradicts the user's report. The only way this makes sense is if the pruning code doesn't actually exist in the version they're testing, even though it appears in this report. Let me trace through the logic more carefully — the subsumes mechanism should be filtering out the pawn since the queen already encompasses its powers, but the bug is still occurring even though the code looks correct. I'm wondering if there's a subtle issue with how the captured piece type is being identified or compared, or if the pruning logic has a flaw in how it's checking for duplicates and subsumption relationships. …Show moreDoneTwo things going on here — one confirms your intuition is right, the other is probably why it's not working yet.
+Your reasoning is correct, and the code already agrees with you. Looking at handleIdentityTheft in your uploaded file, there's already a subsumption pass after the merge:
+jssubsumes(holder, type) {
+    if (holder === 'Q' && (type === 'B' || type === 'R' || type === 'P')) return true;
+    return false;
+},
+Tracing your exact case — pawn (types:['P']) captures a Queen+Knight (types:['Q','N']):
+
+Merge step pushes both: ['P','Q','N']
+Prune step removes anything subsumed by something else in the set: P is subsumed by Q (per subsumes), so it gets dropped
+Result: ['Q','N'] — exactly 2 types, no trim needed
+
+So on paper this should already do exactly what you expect and never show the popup. If it's still prompting you, it's not a logic gap — it's failing to reach that code at all.
+The move is not defined line is still sitting in this exact function, right before any of that runs:
+jshandleIdentityTheft(attacker, captured) {
+    if (!this.identityTheftEnabled) return;
+    if (attacker.type === 'K') return;
+      const promoMatch = move.match(/=?\s*([QRBN])\s*[+#]?$/i);   // <- still here, still throws
+
+    const capTypes = captured.types || [captured.type];
+If this line hasn't been deleted yet in the file you're actually running, every identity-theft capture throws before capTypes is even computed — which would normally mean no merge happens at all, not a 3→2 trim. So if you're seeing the trim popup, either:
+
+you're testing a cached/older bundle that still has the original isTypeSubsumed (before the subsumes retroactive-pruning pass was added), or
+there's a silent catch somewhere swallowing that error and falling back to different code.
+
+Do this:
+
+Delete that stray promoMatch line from handleIdentityTheft (again — it's confirmed still present in this file).
+Hard-refresh / clear cache so you're not running stale JS.
+Retest pawn × (Queen+Knight). It should now go straight to Q+N, no popup.
+
+If it still prompts after both of those, open devtools console during that exact capture and paste whatever error (if any) shows up — that'll tell us definitively whether execution is even reaching the prune step.in right panel, its always maximum screen due to dynamic sizing of move historybut on left panel, its always lesser, give me ideas to fix, like section adding or what to make dynamic in it etcDiagnosed layout imbalance and brainstormed expandable content solutionsDiagnosed layout imbalance and brainstormed expandable content solutionsRoot cause: .card.hist-card{flex:1;...} on the right panel forces it to grow and eat all remaining vertical space, so it visually reaches the bottom of the viewport. Nothing in the left panel has flex:1 — every left-panel card is flex-shrink:0, natural height — so it stops wherever its content ends and leaves invisible empty space below it inside the 100vh container. Both panels are the same actual height (calc(100vh - 24px)), it's just that only the right one visibly fills it.
+Quick fix (cosmetic only, 1 line): give the last visible left-panel card flex:1 so it silently absorbs the leftover space:
+css#editorUI, #draftUI {
+  flex: 1;
+}
+But since both are display:none most of the time, that won't help when they're hidden. Better to pick a card that's always visible, like #perspectiveCard, and add flex:1;display:flex;flex-direction:column;justify-content:center to it — makes the whole left column visually balanced with zero new features. Cheap, but it's just dead space with a border around it.
+Better fix — give that space an actual job. Candidates for a new flex:1 card in the left panel, in order of what'd pay off most:
+
+Captured pieces / material card — right now captures only show as tiny icons in the player bars. A dedicated card with bigger icons, point differential, and (relevant to your Identity Theft variant) the composite-piece breakdown for anything captured mid-game would use variable vertical space naturally and is actually useful info that's currently cramped.
+Event/game log — a scrolling feed distinct from move notation: "White offered draw", "Dice: N,B rolled", "Black's Rook became Rook+Knight", resign/abort events, connection status for multiplayer. This is exactly the kind of content that grows unpredictably and deserves flex:1 the same way move history does.
+Live analysis panel — expand past just the eval bar: best line (PV) as text, an eval-over-time sparkline, blunder/inaccuracy markers per move. Natural fit for the left side since the eval bar already lives near the board.
+Chat (multiplayer) — if you don't have this yet, it's the single most standard use of "the other flex:1 panel" in any online chess UI, and it's inherently variable-height content.
+Variant status/rules glossary — when a variant's active, a compact live reference: for Identity Theft it could show a legend of which composite types exist on the board right now with their icons, or for Dice Chess a rolled-dice history log.
+
+Any one of these turns the imbalance into "left panel does X, right panel does move history" instead of "right panel looks bigger for no reason." If you tell me which one you want, I'll give you the exact HTML block + CSS to match the hist-card pattern (flex:1;display:flex;flex-direction:column;overflow:hidden + inner scrollable -body div).at the end of left panel add about developerUsama Gulzar
+github.com/usamagulzar
+ugulzar.pk@gmail.comin best wayArchitected styled developer card integrating contact information seamlesslyArchitected styled developer card integrating contact information seamlesslyNice — this also happens to be the perfect card to solve the left/right height mismatch from before, since you can make it the one flex:1 element that fills the leftover space.
+Insert this right before the left panel's closing </div> (after the Board Editor Placement UI Card, i.e. right after line ~1013):
+Find:
+html    <!-- Board Editor Placement UI Card -->
+    <div class="card" id="editorUI" style="display:none"></div>
+  </div>
+Replace with:
+html    <!-- Board Editor Placement UI Card -->
     <div class="card" id="editorUI" style="display:none"></div>
 
     <!-- About Developer Card -->
-    <div class="card" id="aboutDevCard">
+    <div class="card" id="aboutDevCard" style="flex:1; display:flex; flex-direction:column; justify-content:flex-end;">
       <div class="card-hd"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>About</div>
       <div class="status-body" style="padding:14px; display:flex; flex-direction:column; gap:10px;">
         <div style="display:flex; align-items:center; gap:10px;">
@@ -312,7 +373,27 @@
       </div>
     </div>
   </div>
+Notes:
 
+flex:1 + justify-content:flex-end makes this card grow to absorb whatever's left below the other cards and pins the content to the bottom — so it visually anchors the panel the same way hist-card does on the right, but only kicks in when there's slack to fill (won't push content off-screen on short viewports since overflow-y:auto is already on .left-panel).
+If you'd rather it not stretch (just sit as a normal compact card), drop flex:1; display:flex; flex-direction:column; justify-content:flex-end; from the outer style and it behaves like every other card.
+GitHub icon is the standard lucide mark, mail icon is a plain envelope — both reuse your existing stroke/size conventions so they won't look out of place next to the rest of the sidebar.
+make it very small, like don't need to announce myself in this big boxOpted for compact inline approach instead of toolsOpted for compact inline approach instead of toolsFair — here's a single compact line instead of a card. Drop this right before the left panel's closing </div> (after #editorUI):
+html    <!-- Board Editor Placement UI Card -->
+    <div class="card" id="editorUI" style="display:none"></div>
+
+    <!-- About Developer (footer) -->
+    <div style="flex:1; display:flex; align-items:flex-end; justify-content:center; padding:8px 0;">
+      <div style="display:flex; align-items:center; gap:8px; font-size:0.68rem; color:var(--muted);">
+        <span>Usama Gulzar</span>
+        <span style="opacity:0.4">·</span>
+        <a href="https://github.com/usamagulzar" target="_blank" rel="noopener" style="color:var(--muted); text-decoration:none;" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='var(--muted)'">GitHub</a>
+        <span style="opacity:0.4">·</span>
+        <a href="mailto:ugulzar.pk@gmail.com" style="color:var(--muted); text-decoration:none;" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='var(--muted)'">Email</a>
+      </div>
+    </div>
+  </div>
+  
   <div class="board-col">
     <!-- Black player (top) -->
     <div class="player-bar" id="barB">
