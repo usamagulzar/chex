@@ -704,12 +704,21 @@ function importPgn(pgnStr) {
       let matched = null;
       const candidates = [];
 
+      const promoMatch = move.match(/=?\s*([QRBN])\s*[+#]?$/i);
+      const tokenPromo = promoMatch ? promoMatch[1].toUpperCase() : null;
+      
       for (const mv of nxt) {
         const rawFlags = mv.flags;
         const bb = cloneBoard(realBoard);
         const piece = realBoard[mv.from.r][mv.from.c];
+        
         const cap = rawFlags.enp ? { color: turn === 'w' ? 'b' : 'w', type: 'P' } : realBoard[mv.to.r][mv.to.c];
-        const simBoard = applyMv(realBoard, mv.from, mv.to, rawFlags, mv.promo);
+        
+        // Only a pawn landing on the back rank can promote.
+        const isPromoSquare = piece.type === 'P' && (mv.to.r === 0 || mv.to.r === 7);
+        const candidatePromo = isPromoSquare ? (tokenPromo || 'Q') : null;
+        
+        const simBoard = applyMv(realBoard, mv.from, mv.to, rawFlags, candidatePromo);
 
         const nextTurn = turn === 'w' ? 'b' : 'w';
         const simCast = { ...castling };
@@ -729,30 +738,33 @@ function importPgn(pgnStr) {
         const nextLegal = allLegalMoves(nextTurn, simBoard, simEp, simCast, true);
         const chk = inCheck(nextTurn, simBoard);
         const isMate = nextLegal.length === 0 && chk;
-
-        const san = moveToSAN(mv.from, mv.to, piece, cap, rawFlags, bb, isMate, chk, mv.promo);
-
+        
+        const san = moveToSAN(mv.from, mv.to, piece, cap, rawFlags, bb, isMate, chk, candidatePromo);
+        
         // Tier 1: normalised match (x, =, 0->O, dashes, +, #, e.p., parens all stripped)
         if (normSan(san) === normSan(move) || san === move) {
-          matched = { from: mv.from, to: mv.to, flags: rawFlags, promo: mv.promo, piece, cap, san };
+          matched = { from: mv.from, to: mv.to, flags: rawFlags, promo: candidatePromo, piece, cap, san };
           break;
         }
-        candidates.push({ san, mv, rawFlags, piece, cap });
+        candidates.push({ san, mv, rawFlags, piece, cap, promo: candidatePromo });
       }
 
       // Tier 2: fuzzy fallback - match by piece-letter + destination square only
       // Handles wrong disambiguation, completely absent/wrong capture markers, etc.
       if (!matched) {
         const nm = normSan(move);
-        const dest = nm.slice(-2);
+        // Destination pulled straight from coordinates (not string-sliced) so a
+        // trailing promotion letter (e.g. the "Q" in "=Q") can never corrupt it.
+        const destMatch = move.match(/([a-h][1-8])(?:=?[QRBN])?[+#]?$/i);
+        const dest = destMatch ? destMatch[1].toLowerCase() : nm.slice(-2);
         const pieceLetter = /^[NBRQK]/.test(nm) ? nm[0] : 'P';
         const fuzzy = candidates.filter(c => {
-          const ns = normSan(c.san);
-          return ns.slice(-2) === dest && (pieceLetter === 'P' ? c.piece.type === 'P' : c.piece.type === pieceLetter);
+          const cDest = FILES[c.mv.to.c] + (8 - c.mv.to.r);
+          return cDest === dest && (pieceLetter === 'P' ? c.piece.type === 'P' : c.piece.type === pieceLetter);
         });
         if (fuzzy.length === 1) {
           const fz = fuzzy[0];
-          matched = { from: fz.mv.from, to: fz.mv.to, flags: fz.rawFlags, promo: fz.mv.promo, piece: fz.piece, cap: fz.cap, san: fz.san };
+          matched = { from: fz.mv.from, to: fz.mv.to, flags: fz.rawFlags, promo: fz.promo, piece: fz.piece, cap: fz.cap, san: fz.san };
         }
       }
 
