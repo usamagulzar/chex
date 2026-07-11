@@ -22,6 +22,7 @@ window.app = {
   init() {
     this.bindEvents();
     newGame();
+	
     setTimeout(() => this.checkAndRestoreSession(), TIMING.SESSION_RESTORE_DELAY_MS);
   },
 
@@ -49,6 +50,7 @@ window.app = {
   return true;
 },
 
+	
   // --- RENDERING UI ----------------------------------------------------------
   renderAll() {
     this.syncPlayerNames();
@@ -208,6 +210,8 @@ if ((isEvalVisible || isBestMoveVisible) && window.analysis && !window.variants.
 
   renderBoard() {
     const el = document.getElementById('boardEl');
+	const existingOverlay = document.getElementById('arrowOverlay');
+
     el.innerHTML = '';
     
     let ckr = -1, ckc = -1;
@@ -321,13 +325,14 @@ if ((isEvalVisible || isBestMoveVisible) && window.analysis && !window.variants.
       }
     }
     
-    // Append arrowOverlay as the last child to ensure it is always painted on top of all squares/pieces
-    const svgOverlay = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-    svgOverlay.id = "arrowOverlay";
-    svgOverlay.setAttribute("viewBox", "0 0 100 100");
-    svgOverlay.setAttribute("preserveAspectRatio", "none");
-    svgOverlay.setAttribute("style", "position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10;");
-    el.appendChild(svgOverlay);
+	  const svgOverlay = existingOverlay || document.createElementNS("http://www.w3.org/2000/svg", "svg");
+	  if (!existingOverlay) {
+	    svgOverlay.id = "arrowOverlay";
+	    svgOverlay.setAttribute("viewBox", "0 0 100 100");
+	    svgOverlay.setAttribute("preserveAspectRatio", "none");
+	    svgOverlay.setAttribute("style", "position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10;");
+	  }
+	  el.appendChild(svgOverlay);
   },
 
   generateCompositeSVG(color, types) {
