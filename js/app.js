@@ -1968,6 +1968,7 @@ if (window.variants && window.variants.diceChessEnabled) {
       this.saveGameToHistory('Draw');
       multi.saveGameResult('Draw');
       this.clearSessionState();
+	  if (multi.active) multi.detachListeners();
       this.renderAll();
     }
   },
@@ -2090,6 +2091,7 @@ if (window.variants && window.variants.diceChessEnabled) {
         : ((gameData.hostColor || sess.myColor || 'w') === 'w' ? 'b' : 'w');
 
       this.localReset();
+	  this.activeGameId = 'game-' + Date.now();
 
       multi.myColor = restoredColor;
       multi.gameId = gameId;
@@ -2381,7 +2383,6 @@ onDiceRoll(data) {
   onClockSyncResponse(data) {
     if (!multi.active || multi.isHost || !window.timer) return;
     const latency = Math.max(0, (Date.now() - data.requestTimestamp) / 2);
-    window.timer.handleSyncResponse(data, latency);
   },
 
   applyDraftFen(color, fen) {
@@ -2495,11 +2496,13 @@ if (window.variants.handAndBrainEnabled && !window.variants.draftEnabled) {
 	  document.getElementById('resultBanner').classList.add('show');
 	  this.saveGameToHistory(resultText);
 	  this.clearSessionState();
+	  if (multi.active) multi.detachListeners();
 	  this.renderAll();
 	},
 
 	
   onOpponentResign() {
+	if (over) return;
     over = true;
 	if (window.timer) window.timer.stop();
     let oppName = (multi.myColor === 'b' ? 'White' : 'Black');
@@ -2514,10 +2517,12 @@ if (window.variants.handAndBrainEnabled && !window.variants.draftEnabled) {
     this.saveGameToHistory(oppName + ' Resigned');
     document.getElementById('resultBanner').classList.add('show');
     window.audio.playSound('end');
+	if (multi.active) multi.detachListeners();
     this.renderAll();
   },
 
   onGameAborted() {
+	if (over) return;
     over = true;
 	if (window.timer) window.timer.stop();
     document.getElementById('resultTitle').textContent = 'Game Aborted';
@@ -2527,22 +2532,40 @@ if (window.variants.handAndBrainEnabled && !window.variants.draftEnabled) {
     }
     document.getElementById('resultBanner').classList.add('show');
     window.audio.playSound('end');
+	if (multi.active) multi.detachListeners();
     this.renderAll();
   },
 
 
 
   localUndo() {
-    if (!boardHistory.length) return;
-    restoreState(boardHistory.pop());
-    moveHistory.pop();
-    clearHints();
-    over = false;
-    viewIndex = moveHistory.length;
-    liveState = null;
-    this.hideResultBanner();
-    this.renderAll();
-  },
+  if (!boardHistory.length) return;
+  restoreState(boardHistory.pop());
+  moveHistory.pop();
+  clearHints();
+  over = false;
+  viewIndex = moveHistory.length;
+  liveState = null;
+  this.hideResultBanner();
+
+  // `turn` now holds the side whose move we just undid — refund the
+  // increment they were credited for that move, and make sure their
+  // clock (not the opponent's) is the one ticking again.
+  if (window.timer && window.timer.enabled) {
+    const moverColor = turn;
+    const inc = moverColor === 'w' ? window.timer.whiteInc : window.timer.blackInc;
+    if (moverColor === 'w') {
+      window.timer.whiteTime = Math.max(0, window.timer.whiteTime - inc);
+    } else {
+      window.timer.blackTime = Math.max(0, window.timer.blackTime - inc);
+    }
+    window.timer.activeSide = moverColor;
+    window.timer.lastTick = Date.now();
+    if (!window.timer.active) window.timer.start(moverColor);
+  }
+
+  this.renderAll();
+},
 
   localReset() {
     initBoard(INIT_FEN);
@@ -2572,6 +2595,14 @@ if (window.variants.handAndBrainEnabled && !window.variants.draftEnabled) {
     this.isReviewMode = false;
     this.clearSessionState();
     this.hideResultBanner();
+
+	// Put the clock back to the original time control instead of leaving
+	// whatever time happened to be left when the reset was agreed to.
+	if (window.timer && multi.active && multi.lastClockConfig) {
+	  const cc = multi.lastClockConfig;
+	  window.timer.init(cc.wTime, cc.bTime, cc.wInc, cc.bInc);
+	}
+
     this.renderAll();
   },
 
@@ -2943,6 +2974,7 @@ if (window.variants.handAndBrainEnabled && !window.variants.draftEnabled) {
     }
     document.getElementById('resultBanner').classList.add('show');
     window.audio.playSound('end');
+	if (multi.active) multi.detachListeners();
     this.renderAll();
   },
 
@@ -2978,6 +3010,7 @@ if (window.variants.handAndBrainEnabled && !window.variants.draftEnabled) {
     window.audio.playSound('end');
     this.saveGameToHistory('Draw');
     this.clearSessionState();
+	if (multi.active) multi.detachListeners();
     this.renderAll();
   },
 
@@ -3019,6 +3052,7 @@ if (window.variants.handAndBrainEnabled && !window.variants.draftEnabled) {
     if (multi.active && !isRemote) {
       multi.sendSignal('timeout', { color: color });
     }
+	if (multi.active) multi.detachListeners();
     this.renderAll();
   },
 
