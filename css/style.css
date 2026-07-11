@@ -36,9 +36,11 @@ body{display:flex;flex-direction:column;align-items:center;justify-content:cente
 
 
 .chex-logo {
-  height: 42px; /* Scaled down slightly from 54px to match the text baseline perfectly */
+  height: 56px;
   width: auto;
-  fill: var(--gold);
+  color: var(--gold); /* fill="currentColor" reads this */
+  flex-shrink: 0;
+  display: block;
 }
 
 /* layout */
