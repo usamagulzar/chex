@@ -529,18 +529,24 @@
       light: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>'
     };
 
-    function applyTheme(theme) {
-      if (theme === 'dark-blue') {
-        document.documentElement.removeAttribute('data-theme');
-      } else {
-        document.documentElement.setAttribute('data-theme', theme);
-      }
-      const label = document.getElementById('themeToggleLabel');
-      const icon = document.getElementById('themeToggleIcon');
-      if (label) label.textContent = LABELS[theme];
-      if (icon) icon.innerHTML = theme.startsWith('light') ? ICONS.light : ICONS.dark;
-      try { localStorage.setItem('chexTheme', theme); } catch (e) {}
-    }
+function applyTheme(theme) {
+  if (theme === 'dark-blue') {
+    document.documentElement.removeAttribute('data-theme');
+  } else {
+    document.documentElement.setAttribute('data-theme', theme);
+  }
+  const label = document.getElementById('themeToggleLabel');
+  const icon = document.getElementById('themeToggleIcon');
+  if (label) label.textContent = LABELS[theme];
+  if (icon) icon.innerHTML = theme.startsWith('light') ? ICONS.light : ICONS.dark;
+  try { localStorage.setItem('chexTheme', theme); } catch (e) {}
+
+  // Repaint the board immediately so the squares pick up the new theme
+  // without waiting for the next move/refresh.
+  if (window.app && typeof window.app.renderBoard === 'function') {
+    window.app.renderBoard();
+  }
+}
 
     document.addEventListener('DOMContentLoaded', () => {
       let current = 'dark-blue';
