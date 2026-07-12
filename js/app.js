@@ -1144,7 +1144,19 @@ if ((isEvalVisible || isBestMoveVisible) && window.analysis && !window.variants.
     const isRep = counts[currFen] >= 3;
 	const isInsuff = !window.variants.fogOfWarEnabled && isInsufficientMaterial(board);
 
-    const san = moveToSAN({ r: fromRow, c: fromCol }, { r: toRow, c: toCol }, piece, cap, flags, bb, isMate, chk, promo, prevEnPassantSquare, prevCastlingRights);
+    let san = moveToSAN({ r: fromRow, c: fromCol }, { r: toRow, c: toCol }, piece, cap, flags, bb, isMate, chk, promo, prevEnPassantSquare, prevCastlingRights);
+
+    // Identity Theft (append): if this capture merged the piece up to exactly
+    // 2 types, tag the SAN so PGN export/review can reconstruct it. (Growing
+    // to a 3rd type instead routes through showPowerSelect's confirm handler,
+    // which tags the move itself once the player trims back down to 2 —
+    // don't duplicate that here.)
+    if (window.variants.identityTheftEnabled && window.variants.identityTheftMode === 'append'
+        && piece.types && piece.types.length === 2) {
+      const trail = san.match(/[+#]*$/)[0];
+      san = san.slice(0, san.length - trail.length) + '=' + piece.types.join('') + trail;
+    }
+
     lastMove = { from: { r: fromRow, c: fromCol }, to: { r: toRow, c: toCol } };
     moveHistory.push({
       san,
@@ -3379,4 +3391,5 @@ function hlDropXY(x, y) {
     if (el) el.classList.add('dov');
   }
 }
+
 
