@@ -31,12 +31,10 @@
 <meta name="twitter:description" content="A Modern Chess Experience. Play offline, challenge friends, explore different variants, and analyze your games.">
 <meta name="twitter:image" content="https://usamagulzar.github.io/chex/preview.png">
 
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%234d90f0'/%3E%3Ccircle cx='50' cy='33' r='15' fill='%23fff'/%3E%3Cpath d='M32 56C32 46 40 41 50 41C60 41 68 46 68 56L76 74C60 67 40 67 24 74Z' fill='%23fff'/%3E%3Crect x='19' y='74' width='62' height='11' rx='5.5' fill='%23fff'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>♟</text></svg>">
 
 <!-- PWA: manifest + icons -->
 <link rel="manifest" href="manifest.json">
-<link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32.png">
-<link rel="icon" type="image/png" sizes="16x16" href="icons/icon-16.png">
 <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
 <link rel="mask-icon" href="icons/icon-maskable-512.png" color="#4d90f0">
 
@@ -143,25 +141,27 @@
             
             <button class="btn primary" id="sendChallengeBtn" style="width:100%; margin-top:8px; font-size:.9rem; padding:10px;">Send Challenge</button>
           </div>
-          
-          <!-- Offline & History Buttons Row -->
-          <div style="margin-top:8px; border-top:1px solid var(--border); padding-top:8px; display: flex; gap: 8px;">
-            <button class="hist-clear-btn" id="modeOfflineBtn" style="flex: 1;">
-              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>
-              </svg>
-              <span>Play Offline</span>
-            </button>
-            <div style="flex: 1;" id="gameHistoryContainer">
-              <button class="hist-clear-btn" id="showGameHistoryBtn" style="width:100%;">
-                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                  <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
-                </svg>
-                <span>History</span>
-              </button>
-            </div>
-          </div>
 
+        </div>
+
+        <!-- Offline & History footer: same footer bar style as the Clear Board
+             control on the Move History card, so it reads as a consistent
+             piece of UI chrome rather than another item inside the form. -->
+        <div class="hist-footer">
+          <button class="hist-clear-btn" id="modeOfflineBtn" style="flex: 1;">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>
+            </svg>
+            <span>Play Offline</span>
+          </button>
+          <div style="flex: 1;" id="gameHistoryContainer">
+            <button class="hist-clear-btn" id="showGameHistoryBtn" style="width:100%;">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
+              </svg>
+              <span>History</span>
+            </button>
+          </div>
         </div>
       </div>
 
