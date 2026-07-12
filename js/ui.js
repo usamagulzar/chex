@@ -2,43 +2,6 @@
 window.ui = {
   init() {
     this.setupMultiplayer();
-    
-    // Bind global responsive layout adjuster
-    window.addEventListener('resize', () => this.adjustLayout());
-    this.adjustLayout();
-  },
-
-  adjustLayout() {
-    const isMobile = window.innerWidth <= 960;
-    const card = document.getElementById('perspectiveCard');
-    if (!card) return;
-    
-    if (isMobile) {
-      // Mobile view: keep order as it is (in left panel, after setupCard)
-      const leftPanel = document.getElementById('leftPanel');
-      const setupCard = document.getElementById('setupCard');
-      if (leftPanel && setupCard) {
-        leftPanel.insertBefore(card, gameActionsCard.nextSibling);
-      }
-    } else {
-      // Desktop view: shift to right panel, under settings
-      const rightPanel = document.getElementById('rightPanel');
-      if (rightPanel) {
-        const cards = rightPanel.querySelectorAll('.card');
-        let settingsCard = null;
-        cards.forEach(c => {
-          const hd = c.querySelector('.card-hd');
-          if (hd && hd.textContent.includes('Settings')) {
-            settingsCard = c;
-          }
-        });
-        if (settingsCard) {
-          rightPanel.insertBefore(card, settingsCard.nextSibling);
-        } else {
-          rightPanel.appendChild(card);
-        }
-      }
-    }
   },
 
   showStep(id) {
@@ -226,13 +189,6 @@ window.ui = {
     const hintsToggle = document.getElementById('showHintsToggle');
     if (hintsToggle) {
       hintsToggle.addEventListener('change', () => {
-        if (window.app) window.app.renderAll();
-      });
-    }
-
-    const highlightToggle = document.getElementById('highlightLastMoveToggle');
-    if (highlightToggle) {
-      highlightToggle.addEventListener('change', () => {
         if (window.app) window.app.renderAll();
       });
     }

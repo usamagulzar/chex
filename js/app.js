@@ -70,9 +70,6 @@ window.app = {
       gameActionsCard.style.display = showControlsCard ? 'block' : 'none';
     }
 
-    const perspectiveCard = document.getElementById('perspectiveCard');
-    if (perspectiveCard) perspectiveCard.style.display = 'block';
-
     const resignBtn = document.getElementById('resignBtn');
     const drawBtn = document.getElementById('drawBtn');
     const rematchBtnStatus = document.getElementById('rematchBtnStatus');
@@ -234,6 +231,8 @@ if ((isEvalVisible || isBestMoveVisible) && window.analysis && !window.variants.
     // Highlights validation on draft mode rows
     const isDrafting = window.variants.isDraftActive;
     const activeDraftColor = multi.active ? multi.myColor : this.draftColor;
+    const isEditMode = (this.gameState !== 'playing' || over) && !multi.active && this.editorTool === 'edit';
+    const suppressMoveHints = isDrafting || isEditMode;
 
     for (let rIdx = 0; rIdx < 8; rIdx++) {
       for (let cIdx = 0; cIdx < 8; cIdx++) {
@@ -273,17 +272,16 @@ if ((isEvalVisible || isBestMoveVisible) && window.analysis && !window.variants.
         }
 
         if (!isFogged) {
-          if (selectedSquare?.r === r && selectedSquare?.c === c) sq.classList.add('selectedSquare');
+          if (!suppressMoveHints && selectedSquare?.r === r && selectedSquare?.c === c) sq.classList.add('selectedSquare');
           
-          const hlLast = document.getElementById('highlightLastMoveToggle')?.checked !== false;
-          if (lastMove && hlLast) {
+          if (lastMove) {
             if (lastMove.from.r === r && lastMove.from.c === c) sq.classList.add('lf');
             if (lastMove.to.r === r && lastMove.to.c === c) sq.classList.add('lt');
           }
           if (r === ckr && c === ckc) sq.classList.add('chk');
           
           const showHints = document.getElementById('showHintsToggle')?.checked !== false;
-          if (selectedSquare && showHints) {
+          if (!suppressMoveHints && selectedSquare && showHints) {
             const mv = legal.find(m => m.r === r && m.c === c);
             if (mv) sq.classList.add(board[r][c] || mv.enp ? 'chint' : 'mhint');
           }
@@ -695,6 +693,7 @@ if ((isEvalVisible || isBestMoveVisible) && window.analysis && !window.variants.
         const textSpan = document.getElementById('editBtnText');
         if (textSpan) textSpan.textContent = "Edit";
         editBtn.classList.remove('primary');
+        editBtn.style.display = '';
       }
       
       // Restore default visibility
@@ -715,9 +714,7 @@ if ((isEvalVisible || isBestMoveVisible) && window.analysis && !window.variants.
     
     const editBtn = document.getElementById('editBoardBtn');
     if (editBtn) {
-      const textSpan = document.getElementById('editBtnText');
-      if (textSpan) textSpan.textContent = "Exit";
-      editBtn.classList.add('primary');
+      editBtn.style.display = 'none';
     }
     
     const activeColor = this.editorColor || 'w';
@@ -821,6 +818,9 @@ if ((isEvalVisible || isBestMoveVisible) && window.analysis && !window.variants.
           <button class="btn" style="flex:1; font-size:0.72rem; padding:6px 2px;" onclick="window.app.undoEditorChange()" ${hasUndo ? '' : 'disabled style="opacity:0.5; cursor:not-allowed;"'}>Undo</button>
           <button class="btn" style="flex:1; font-size:0.72rem; padding:6px 2px;" onclick="window.app.flipEditorBoard()">Flip</button>
         </div>
+        <div class="btn-row" style="margin-top:6px; width:100%;">
+          <button class="btn primary" style="flex:1; font-size:0.72rem; padding:6px 2px;" onclick="window.app.toggleBoardEditor()">Exit Edit</button>
+        </div>
       </div>
     `;
     
@@ -905,6 +905,7 @@ if ((isEvalVisible || isBestMoveVisible) && window.analysis && !window.variants.
         this.editorColor = 'w';
         this.editorPieceType = 'P';
       }
+      clearHints();
     }
     this.renderAll();
   },
@@ -2653,6 +2654,7 @@ if (window.variants.handAndBrainEnabled && !window.variants.draftEnabled) {
 
     this.gameState = 'playing';
     window.variants.init();
+    clearHints();
     
     if (window.timer.enabled && !window.variants.draftEnabled) {
       window.timer.start('w');
