@@ -404,11 +404,11 @@ body{display:flex;flex-direction:column;align-items:center;justify-content:cente
 }
 .segmented-btn:hover {
   color: var(--text);
-  background: rgba(255, 255, 255, 0.04);
+  background: color-mix(in srgb, var(--text) 8%, transparent);
 }
 .segmented-btn.active {
-  background: var(--primary, #3a3a3a);
-  color: var(--gold);
+  background: var(--gold);
+  color: #fff;
   font-weight: 600;
   box-shadow: 0 1px 3px rgba(0,0,0,0.3);
 }
@@ -510,6 +510,29 @@ body{display:flex;flex-direction:column;align-items:center;justify-content:cente
   /* Hide header/logo during active play on mobile */
   .game-wrap:not(.in-setup-flow) #brandingCard {
     display: none !important;
+  }
+
+  /* Shadows are expensive to paint/composite on many mobile GPUs and show up
+     as visible smudging/banding artifacts, especially against light theme
+     backgrounds. Flatten them on small screens; borders keep the same
+     depth cues without the repaint cost. */
+  .card,
+  .btn,
+  .p-avatar,
+  .promo-dlg,
+  .result-box,
+  #barW .turn-dot,
+  .turn-dot,
+  .join-code-input,
+  .join-code-input:focus,
+  .sq.draft-valid {
+    box-shadow: none !important;
+  }
+  .btn.primary {
+    text-shadow: none !important;
+  }
+  .piece.dragging-active {
+    filter: none !important;
   }
 }
 
