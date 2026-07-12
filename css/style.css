@@ -29,8 +29,8 @@
   --check-light:#e74c3cbb;--check-dark:#c0392bbb;
   --bg:#302e2b;--panel:#262522;--panel2:#312e2b;--border:#3b3936;
   --text:#ffffff;--dim:#989795;--muted:#575653;--gold:#4d90f0; 
-  --sq:min(120px, calc((100vh - 104px) / 8), calc((100vw - 400px) / 8));
-  --sq:min(120px, calc((100dvh - 104px) / 8), calc((100vw - 400px) / 8));
+  --sq:min(120px, calc((100vh - 144px) / 8), calc((100vw - 400px) / 8));
+  --sq:min(120px, calc((100dvh - 144px) / 8), calc((100vw - 400px) / 8));
   --bsz:calc(var(--sq)*8);
   }
 
@@ -114,7 +114,7 @@ body{display:flex;flex-direction:column;align-items:center;justify-content:cente
   display: flex;
   flex-direction: column;
   gap: 16px;
-  height: calc(100vh - 24px);
+  height: calc(100vh - 64px);
   overflow-y: auto;
   overflow-x: hidden;
 }
@@ -122,7 +122,7 @@ body{display:flex;flex-direction:column;align-items:center;justify-content:cente
   display: flex;
   flex-direction: column;
   gap: 16px;
-  height: calc(100vh - 24px);
+  height: calc(100vh - 64px);
   overflow-y: auto;
   overflow-x: hidden;
 }
