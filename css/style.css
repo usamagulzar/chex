@@ -572,7 +572,7 @@ body{display:flex;flex-direction:column;align-items:center;justify-content:cente
   letter-spacing: 4px; text-align: center; text-transform: uppercase; outline: none;
   transition: border-color .18s, box-shadow .18s;
 }
-.join-code-input::placeholder { color: var(--muted); font-size: .85rem; letter-spacing: 1px; font-weight: 400; }
+.join-code-input::placeholder { color: var(--muted); font-size: .85rem; letter-spacing: 1px; font-weight: 300; }
 .join-code-input:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(77,144,240,.15); }
 
 /* Variation tree inline elements */
