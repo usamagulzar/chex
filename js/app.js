@@ -185,6 +185,10 @@ if ((isEvalVisible || isBestMoveVisible) && window.analysis && !window.variants.
     const isPlaying = (this.gameState === 'playing' && !over);
     const isMultiActive = multi.active;
     const isImportDisabled = isPlaying || isMultiActive;
+
+    const importExportCard = document.getElementById('importExportCard');
+    if (importExportCard) importExportCard.style.display = isPlaying ? 'none' : 'block';
+
     if (importBtn) {
       importBtn.disabled = isImportDisabled;
       importBtn.style.opacity = isImportDisabled ? '0.4' : '1';
@@ -2540,8 +2544,8 @@ if (window.variants.handAndBrainEnabled && !window.variants.draftEnabled) {
     if (multi.opponentId) {
       oppName = multi.opponentId.charAt(0).toUpperCase() + multi.opponentId.slice(1);
     }
-    document.getElementById('resultTitle').textContent = oppName + ' Resigned';
-    document.getElementById('resultSub').textContent = 'You win!';
+    document.getElementById('resultTitle').textContent = 'You win!';
+    document.getElementById('resultSub').textContent = oppName + ' Resigned';
     if (multi.active) {
       multi.saveGameResult(oppName + ' Resigned');
     }
@@ -2995,8 +2999,8 @@ if (window.variants.handAndBrainEnabled && !window.variants.draftEnabled) {
       if (multi.active && multi.peerId) {
         myName = multi.peerId.charAt(0).toUpperCase() + multi.peerId.slice(1);
       }
-      document.getElementById('resultTitle').textContent = myName + ' Resigned';
-      document.getElementById('resultSub').textContent = 'Opponent wins!';
+      document.getElementById('resultTitle').textContent = 'Opponent wins!';
+      document.getElementById('resultSub').textContent = myName + ' Resigned';
       if (multi.active) {
         multi.sendSignal('resign');
         multi.saveGameResult(myName + ' Resigned');
@@ -3070,8 +3074,8 @@ if (window.variants.handAndBrainEnabled && !window.variants.draftEnabled) {
         winnerName = winnerUser.charAt(0).toUpperCase() + winnerUser.slice(1);
       }
     }
-    document.getElementById('resultTitle').textContent = `${winnerName} won on time`;
-    document.getElementById('resultSub').textContent = 'Time out!';
+    document.getElementById('resultTitle').textContent = `${winnerName} Wins!`;
+    document.getElementById('resultSub').textContent = 'Won on time';
     if (multi.active) {
        multi.saveGameResult(`${winnerName} won on time`);
     }
