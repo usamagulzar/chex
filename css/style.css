@@ -29,8 +29,8 @@
   --check-light:#e74c3cbb;--check-dark:#c0392bbb;
   --bg:#302e2b;--panel:#262522;--panel2:#312e2b;--border:#3b3936;
   --text:#ffffff;--dim:#989795;--muted:#575653;--gold:#4d90f0; 
-  --sq:min(120px, calc((100vh - 144px) / 8), calc((100vw - 400px) / 8));
-  --sq:min(120px, calc((100dvh - 144px) / 8), calc((100vw - 400px) / 8));
+  --sq:min(120px, calc((100vh - 128px) / 8), calc((100vw - 400px) / 8));
+  --sq:min(120px, calc((100dvh - 128px) / 8), calc((100vw - 400px) / 8));
   --bsz:calc(var(--sq)*8);
   }
 
@@ -95,7 +95,8 @@ body{display:flex;flex-direction:column;align-items:center;justify-content:cente
 .game-wrap{
   display: grid;
   grid-template-columns: 1fr calc(var(--bsz) + 14px) 1fr;
-  gap: 20px;
+  column-gap: 20px;
+  row-gap: 6px;
   align-items: center;
   justify-content: center;
   width: 100%;
@@ -114,7 +115,7 @@ body{display:flex;flex-direction:column;align-items:center;justify-content:cente
   display: flex;
   flex-direction: column;
   gap: 16px;
-  height: calc(100vh - 64px);
+  height: calc(100vh - 48px);
   overflow-y: auto;
   overflow-x: hidden;
 }
@@ -122,21 +123,21 @@ body{display:flex;flex-direction:column;align-items:center;justify-content:cente
   display: flex;
   flex-direction: column;
   gap: 16px;
-  height: calc(100vh - 64px);
+  height: calc(100vh - 48px);
   overflow-y: auto;
   overflow-x: hidden;
 }
 
-/* Dev credit footer: its own row spanning the whole grid on desktop.
-   On mobile (see media query below) it gets order:4 so it always renders
-   after the board/left-panel/right-panel instead of in the middle of the page. */
+/* Dev credit footer: sits directly under the left panel on desktop.
+   On mobile (see media query below) it gets order:4 + full width/centered so
+   it always renders after the board/left-panel/right-panel, at the very end. */
 .dev-footer {
-  grid-column: 1 / -1;
+  grid-column: 1;
+  justify-self: start;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 8px;
-  padding-top: 4px;
   font-size: 0.68rem;
   color: var(--muted);
 }
@@ -452,6 +453,9 @@ body{display:flex;flex-direction:column;align-items:center;justify-content:cente
   }
   .dev-footer {
     order: 4;
+    grid-column: 1;
+    justify-self: center;
+    justify-content: center;
     width: 100%;
     max-width: var(--bsz);
     padding: 12px 0 4px;
