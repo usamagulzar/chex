@@ -83,7 +83,18 @@ window.ui = {
     
     const historyContainer = document.getElementById('gameHistoryContainer');
     if (historyContainer) historyContainer.style.display = 'block';
-    if (auth.isAuthenticated) {
+
+    // Determine sign-in state from the username itself, not from the async
+    // Firebase `isAuthenticated` flag. The username is restored from
+    // localStorage synchronously on load (before Firebase has resolved),
+    // and the rest of the app already enforces "signed out === Guest-prefixed
+    // username" as an invariant (see auth.js's onAuthStateChanged, signOut,
+    // and the anti-tamper check). Reusing that invariant here means the
+    // correct button shows immediately on load instead of flashing "Sign In"
+    // for a moment while Firebase catches up.
+    const isSignedIn = !!(auth.username && !auth.username.toLowerCase().startsWith('guest'));
+
+    if (isSignedIn) {
       if (signInBtn) signInBtn.style.display = 'none';
       if (signOutBtn) signOutBtn.style.display = 'inline-block';
     } else {
