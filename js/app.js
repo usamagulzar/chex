@@ -602,7 +602,13 @@ if ((isEvalVisible || isBestMoveVisible) && window.analysis && !window.variants.
 
     // Hand and Brain suggestion info
     if (window.variants.isHandAndBrainActive) {
-      if (window.variants.brainSuggestedPiece) {
+      if (viewIndex < moveHistory.length) {
+        const histSan = moveHistory[viewIndex]?.san || '';
+        const playedPiece = (histSan.match(/^[NBRQK]/) || [])[0] || 'P';
+        const reviewTurn = moveHistory[viewIndex]?.turn || turn;
+        const icon = `<span class="dice-piece-icon">${SVG[reviewTurn + playedPiece]}</span>`;
+        txt += `<div class="variant-info-box">${window.ICONS.brain} Move: ${icon}</div>`;
+      } else if (window.variants.brainSuggestedPiece) {
         const icon = `<span class="dice-piece-icon">${SVG[turn + window.variants.brainSuggestedPiece]}</span>`;
         txt += `<div class="variant-info-box">${window.ICONS.brain} Move: ${icon}</div>`;
       } else {
