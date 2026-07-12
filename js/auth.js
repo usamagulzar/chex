@@ -75,6 +75,14 @@ window.auth = {
             this.setUsername(guestName);
           }
 
+          // initPeer() (called synchronously in init(), above) may have attached
+          // the challenge listener *before* this anonymous sign-in resolved,
+          // in which case that first attach could have failed permission checks.
+          // Re-attach now that request.auth is guaranteed to be populated.
+          if (window.multi && typeof window.multi.listenForChallenges === 'function') {
+            window.multi.listenForChallenges();
+          }
+
           if (window.ui && typeof window.ui.syncAuthUI === 'function') {
             window.ui.syncAuthUI();
           }

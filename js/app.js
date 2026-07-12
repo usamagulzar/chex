@@ -2001,20 +2001,35 @@ if (window.variants && window.variants.diceChessEnabled) {
     sendBtn.textContent = 'Waiting for opponent...';
   },
 
-  acceptChallenge() {
+  async acceptChallenge() {
     if (this.challengePopupTimeout) clearTimeout(this.challengePopupTimeout);
     if (!this.pendingChallenge) return;
-    multi.acceptChallenge(this.pendingChallenge.challengeId);
+    const btn = document.getElementById('acceptChallengeBtn');
+    if (btn) { btn.disabled = true; btn.textContent = 'Accepting...'; }
+    const challengeId = this.pendingChallenge.challengeId;
+    const ok = await multi.acceptChallenge(challengeId);
+    if (btn) { btn.disabled = false; btn.textContent = 'Accept'; }
+    if (!ok) {
+      alert("Couldn't accept that challenge — connection or auth issue. Please try again.");
+      return; // leave popup open so the user can retry
+    }
     document.getElementById('challengePopup').style.display = 'none';
     this.pendingChallenge = null;
   },
 
-  declineChallenge() {
+  async declineChallenge() {
     if (this.challengePopupTimeout) clearTimeout(this.challengePopupTimeout);
     if (!this.pendingChallenge) return;
-    multi.declineChallenge(this.pendingChallenge.challengeId);
+    const challengeId = this.pendingChallenge.challengeId;
+    // Hide immediately — declining is a "leave me alone" action, we don't want
+    // the user stuck staring at a popup if this fails on a challenge that's
+    // about to expire anyway.
     document.getElementById('challengePopup').style.display = 'none';
     this.pendingChallenge = null;
+    const ok = await multi.declineChallenge(challengeId);
+    if (!ok) {
+      console.warn('Decline failed to sync — the sender may still see the challenge until it expires.');
+    }
   },
 
   showProposal(type) {
@@ -2364,6 +2379,9 @@ if (window.variants.diceChessEnabled && gameData.currentDice) {
       myColor,
       clockConfig: data.clockConfig
     };
+
+    const nameEl = document.getElementById('challengeSenderName');
+    if (nameEl) nameEl.textContent = data.sender;
 
     const list = document.getElementById('challengeVariantsList');
     const v = data.variants;

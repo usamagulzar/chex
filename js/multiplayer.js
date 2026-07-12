@@ -101,7 +101,13 @@ window.multi = {
           }
         });
       }, (err) => {
-        console.warn("Error listening to challenges:", err);
+        // Most common cause: this listener attached before Firebase anonymous
+        // auth finished resolving, so the initial read was permission-denied.
+        // Retry instead of leaving the user permanently unable to receive
+        // challenges for the rest of the session.
+        console.warn("Error listening to challenges, retrying in 2s:", err);
+        if (this._challengeRetryTimeout) clearTimeout(this._challengeRetryTimeout);
+        this._challengeRetryTimeout = setTimeout(() => this.listenForChallenges(), 2000);
       });
   },
 
@@ -233,14 +239,22 @@ window.multi = {
     });
   },
 
-  async acceptChallenge(challengeId) {
+  async acceptChallenge(challengeId, _isRetry = false) {
     if (window.auth && typeof window.auth.ensureAnonymousAuth === 'function') {
       await window.auth.ensureAnonymousAuth();
     }
-    const joinerUid = (window.auth && window.auth.googleUID) || (auth.currentUser && auth.currentUser.uid) || null;
+    let joinerUid = (window.auth && window.auth.googleUID) || (auth.currentUser && auth.currentUser.uid) || null;
+
     if (!joinerUid) {
-      console.warn('Cannot accept challenge before Firebase auth is ready.');
-      return;
+      // auth.onAuthStateChanged (which sets window.auth.googleUID) can lag
+      // slightly behind signInAnonymously() resolving. One short retry
+      // covers that gap instead of failing outright on a fresh page load.
+      if (!_isRetry) {
+        await new Promise(res => setTimeout(res, 400));
+        return this.acceptChallenge(challengeId, true);
+      }
+      console.warn('Cannot accept challenge: Firebase auth is not ready.');
+      return false;
     }
 
     this.gameId = challengeId;
@@ -282,14 +296,20 @@ window.multi = {
           this.setupGameListeners();
         }
       });
+      return true;
     } catch (err) {
       console.error('Failed to accept challenge:', err);
+      this.gameId = null;
+      return false;
     }
   },
 
   declineChallenge(challengeId) {
-    db.collection('challenges').doc(challengeId).update({
+    return db.collection('challenges').doc(challengeId).update({
       status: 'declined'
+    }).then(() => true).catch(err => {
+      console.error('Failed to decline challenge:', err);
+      return false;
     });
   },
 
