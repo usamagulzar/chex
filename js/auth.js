@@ -80,7 +80,7 @@ window.auth = {
         if (user.isAnonymous) {
           let currentName = localStorage.getItem('chessology_username') || '';
           if (!currentName.toLowerCase().startsWith('guest')) {
-            const guestName = Math.random().toString(36).substring(2, 8).toUpperCase();
+            const guestName = 'Guest' + Math.random().toString(36).substring(2, 8).toUpperCase();
             this.setUsername(guestName);
           }
 
@@ -123,7 +123,7 @@ window.auth = {
         let currentName = localStorage.getItem('chessology_username') || '';
         if (!currentName.toLowerCase().startsWith('guest')) {
           console.warn("Unauthenticated user detected with custom username. Reverting to Guest.");
-          const guestName = Math.random().toString(36).substring(2, 8).toUpperCase();
+          const guestName = 'Guest' + Math.random().toString(36).substring(2, 8).toUpperCase();
           this.setUsername(guestName);
         }
 
@@ -173,7 +173,7 @@ window.auth = {
     await auth.signOut();
     await this.ensureAnonymousAuth();
     // Revert to a guest username
-    const guestName = Math.random().toString(36).substring(2, 8).toUpperCase();
+    const guestName = 'Guest' + Math.random().toString(36).substring(2, 8).toUpperCase();
     this.setUsername(guestName);
     if (window.ui && typeof window.ui.syncAuthUI === 'function') {
       window.ui.syncAuthUI();
