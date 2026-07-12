@@ -25,6 +25,9 @@ window.variants = {
   handAndBrainEnabled: false,
   brainSuggestedPiece: null, // 'P', 'N', 'B', 'R', 'Q', 'K'
 
+  // Chess960 (Fischer Random)
+  chess960Enabled: false,
+
   init() {
     this.allowedDiceTypes = [];
     this.brainSuggestedPiece = null;

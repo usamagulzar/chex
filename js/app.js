@@ -36,7 +36,8 @@ window.app = {
     const showEval = document.getElementById('showEvalBarToggle')?.checked !== false;
     const isIdentityTheft = window.variants && window.variants.isIdentityTheftActive;
     const isFog = window.variants && window.variants.fogOfWarEnabled;
-    if (!showEval || isIdentityTheft || isFog ) return false;
+    const isChess960 = window.variants && window.variants.chess960Enabled;
+    if (!showEval || isIdentityTheft || isFog || isChess960) return false;
     if (this.gameState === 'playing' && !over) return false;
     return true;
   },
@@ -45,7 +46,8 @@ window.app = {
   const showBest = document.getElementById('showBestMoveToggle')?.checked !== false;
   const isIdentityTheft = window.variants && window.variants.isIdentityTheftActive;
   const isFog = window.variants && window.variants.fogOfWarEnabled;
-  if (!showBest || isIdentityTheft || isFog) return false;
+  const isChess960 = window.variants && window.variants.chess960Enabled;
+  if (!showBest || isIdentityTheft || isFog || isChess960) return false;
   if (this.gameState === 'playing' && !over) return false;
   return true;
 },
@@ -467,6 +469,11 @@ if ((isEvalVisible || isBestMoveVisible) && window.analysis && !window.variants.
         activeEl.scrollIntoView({ block: 'nearest' });
       }
     }
+
+    const prevBtn = document.getElementById('histPrevBtn');
+    const nextBtn = document.getElementById('histNextBtn');
+    if (prevBtn) prevBtn.disabled = viewIndex <= 0;
+    if (nextBtn) nextBtn.disabled = viewIndex >= moveHistory.length;
   },
 
   renderStatus() {
@@ -1469,6 +1476,8 @@ if (window.variants && window.variants.diceChessEnabled) {
       headers += `[Variant "Draft Mode"]\n`;
     } else if (isFog) {
       headers += `[Variant "Fog of War"]\n`;
+    } else if (window.variants && window.variants.chess960Enabled) {
+      headers += `[Variant "Chess960"]\n`;
     }
     
     return headers + "\n";
@@ -1484,6 +1493,30 @@ if (window.variants && window.variants.diceChessEnabled) {
     if (branchSelect) {
       branchSelect.addEventListener('change', e => {
         this.switchBranch(e.target.value);
+      });
+    }
+
+    // Move history footer: prev/next mirror the ArrowLeft/ArrowRight keyboard
+    // shortcuts exactly; Clear Board always asks for confirmation first so a
+    // stray tap can't wipe an in-progress game.
+    const histPrevBtn = document.getElementById('histPrevBtn');
+    if (histPrevBtn) {
+      histPrevBtn.addEventListener('click', () => {
+        if (moveHistory.length > 0 && viewIndex > 0) jumpTo(viewIndex - 1);
+      });
+    }
+    const histNextBtn = document.getElementById('histNextBtn');
+    if (histNextBtn) {
+      histNextBtn.addEventListener('click', () => {
+        if (moveHistory.length > 0 && viewIndex < moveHistory.length) jumpTo(viewIndex + 1);
+      });
+    }
+    const histClearBtn = document.getElementById('histClearBtn');
+    if (histClearBtn) {
+      histClearBtn.addEventListener('click', () => {
+        if (confirm('Clear the board and start a new game? This will erase the current move history.')) {
+          newGame();
+        }
       });
     }
 
@@ -1545,6 +1578,17 @@ if (window.variants && window.variants.diceChessEnabled) {
 
     // Variants toggles have no immediate side-effects.
     // They are securely read and locked in when startGame() is called.
+    // Exception: Chess960 and Draft Mode can't be active together (a drafted
+    // board has no fixed back rank to castle from), so selecting one clears the other.
+    const wireMutualExclusion = (idA, idB) => {
+      const elA = document.getElementById(idA);
+      const elB = document.getElementById(idB);
+      if (!elA || !elB) return;
+      elA.addEventListener('change', () => { if (elA.checked) elB.checked = false; });
+      elB.addEventListener('change', () => { if (elB.checked) elA.checked = false; });
+    };
+    wireMutualExclusion('chess960Toggle', 'draftModeToggle');
+    wireMutualExclusion('chess960ToggleOffline', 'draftModeToggleOffline');
   },
 
   onPointerDown(e) {
@@ -1825,6 +1869,8 @@ if (window.variants && window.variants.diceChessEnabled) {
     document.getElementById('draftModeToggle').disabled = isJoiner;
     document.getElementById('identityTheftToggle').disabled = isJoiner;
     document.getElementById('identityTheftMode').disabled = isJoiner;
+    const chess960ToggleLobby = document.getElementById('chess960Toggle');
+    if (chess960ToggleLobby) chess960ToggleLobby.disabled = isJoiner;
     
     document.getElementById('clockSelectLobby').disabled = isJoiner;
     document.getElementById('wTimeLobby').disabled = isJoiner;
@@ -1859,14 +1905,18 @@ if (window.variants && window.variants.diceChessEnabled) {
   },
 
   readLobbyVariants() {
+    const chess960Enabled = document.getElementById('chess960Toggle').checked;
     return {
       diceChessEnabled: document.getElementById('diceChessToggle').checked,
       fogOfWarEnabled: document.getElementById('fogOfWarToggle').checked,
-      draftEnabled: document.getElementById('draftModeToggle').checked,
+      draftEnabled: chess960Enabled ? false : document.getElementById('draftModeToggle').checked,
       identityTheftEnabled: document.getElementById('identityTheftToggle').checked,
       identityTheftMode: document.getElementById('identityTheftMode').value,
-	  handAndBrainEnabled: document.getElementById('handAndBrainToggle').checked   // add this
-
+	  handAndBrainEnabled: document.getElementById('handAndBrainToggle').checked,   // add this
+      chess960Enabled: chess960Enabled,
+      // Generated once, here, so both host and joiner play the exact same
+      // random Chess960 starting position (it rides along in the challenge payload).
+      chess960Fen: chess960Enabled ? generateChess960StartFen() : null
     };
   },
 
@@ -2225,6 +2275,7 @@ if (window.variants.diceChessEnabled && gameData.currentDice) {
     window.variants.identityTheftEnabled = variants.identityTheftEnabled;
     window.variants.identityTheftMode = variants.identityTheftMode;
 	window.variants.handAndBrainEnabled = variants.handAndBrainEnabled;
+    window.variants.chess960Enabled = !!variants.chess960Enabled;
 
     if (clockConfig) {
       window.timer.init(clockConfig.wTime, clockConfig.bTime, clockConfig.wInc, clockConfig.bInc);
@@ -2235,7 +2286,10 @@ if (window.variants.diceChessEnabled && gameData.currentDice) {
       window.timer.init(0, 0, 0, 0);
     }
 
-    this.localReset();
+    // Both host and joiner receive the exact same challenge payload, so the
+    // Chess960 starting position (generated once by the host) is identical
+    // on both ends.
+    this.localReset(window.variants.chess960Enabled ? variants.chess960Fen : null);
 	this.activeGameId = 'game-' + Date.now();
     this.gameState = 'playing';
     flipped = (myColor === 'b'); // Set initial online perspective based on color
@@ -2304,6 +2358,7 @@ if (window.variants.diceChessEnabled && gameData.currentDice) {
     if (v.draftEnabled) variantLines.push('Draft Mode');
     if (v.identityTheftEnabled) variantLines.push(`Identity Theft (${v.identityTheftMode})`);
 	if (v.handAndBrainEnabled) variantLines.push('Hand and Brain');
+    if (v.chess960Enabled) variantLines.push('Chess960');
 
     if (variantLines.length === 0) {
       const standardLine = document.createElement('div');
@@ -2602,10 +2657,11 @@ if (window.variants.handAndBrainEnabled && !window.variants.draftEnabled) {
   this.renderAll();
 },
 
-  localReset() {
-    initBoard(INIT_FEN);
+  localReset(fen) {
+    initBoard(fen || INIT_FEN);
     turn = 'w';
     castling = { wK: true, wQ: true, bK: true, bQ: true };
+    deriveChess960Setup();
     enPassantSquare = null;
     halfMoveClock = 0;
     fullMoveNumber = 1;
@@ -2652,6 +2708,8 @@ if (window.variants.handAndBrainEnabled && !window.variants.draftEnabled) {
     window.variants.identityTheftMode = getS('identityTheftModeOffline');
     window.variants.fogOfWarEnabled = false; // Never online here
 	window.variants.handAndBrainEnabled = getT('handAndBrainToggleOffline');
+    window.variants.chess960Enabled = getT('chess960ToggleOffline');
+    if (window.variants.chess960Enabled) window.variants.draftEnabled = false;
 
     const clockConfig = this.readClockConfig('Offline');
     window.timer.init(clockConfig.wTime, clockConfig.bTime, clockConfig.wInc, clockConfig.bInc);
@@ -2691,6 +2749,7 @@ if (window.variants.handAndBrainEnabled && !window.variants.draftEnabled) {
     if (window.variants.draftEnabled) activeVariants.push('Draft Mode');
     if (window.variants.identityTheftEnabled) activeVariants.push('Identity Theft');
     if (window.variants.handAndBrainEnabled) activeVariants.push('Hand and Brain');
+    if (window.variants.chess960Enabled) activeVariants.push('Chess960');
 	  
     const variantStr = activeVariants.length > 0 ? activeVariants.join(', ') : 'Standard';
     
@@ -3094,8 +3153,9 @@ if (window.variants.handAndBrainEnabled && !window.variants.draftEnabled) {
 
   startGameNormal() {
     const isDraft = document.getElementById('draftModeToggleOffline')?.checked || false;
+    const isChess960 = document.getElementById('chess960ToggleOffline')?.checked || false;
     if (!isDraft) {
-      importFen(INIT_FEN, true);
+      importFen(isChess960 ? generateChess960StartFen() : INIT_FEN, true);
     }
     this.startGame();
   },

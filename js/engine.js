@@ -3,6 +3,73 @@ const FILES = 'abcdefgh';
 const PIECE_VALUES = { K: 0, Q: 9, R: 5, B: 3, N: 3, P: 1 };
 const INIT_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 
+// --- CHESS960 (FISCHER RANDOM) SETUP -----------------------------------------
+// Generates a random back rank that satisfies FIDE's Chess960 rules:
+//  - bishops on opposite-coloured squares
+//  - king strictly between the two rooks
+// Both colours use the mirrored rank, exactly like standard chess.
+function generateChess960BackRank() {
+  const squares = Array(8).fill(null);
+  const emptyCols = () => squares.reduce((acc, v, i) => { if (v === null) acc.push(i); return acc; }, []);
+
+  // Bishops: one on an even file, one on an odd file (opposite square colours).
+  const evenCols = [0, 2, 4, 6], oddCols = [1, 3, 5, 7];
+  squares[evenCols[Math.floor(Math.random() * 4)]] = 'B';
+  squares[oddCols[Math.floor(Math.random() * 4)]] = 'B';
+
+  // Queen: any remaining square.
+  let empty = emptyCols();
+  squares[empty[Math.floor(Math.random() * empty.length)]] = 'Q';
+
+  // Knights: any two remaining squares.
+  empty = emptyCols();
+  let idx = Math.floor(Math.random() * empty.length);
+  squares[empty[idx]] = 'N';
+  empty.splice(idx, 1);
+  idx = Math.floor(Math.random() * empty.length);
+  squares[empty[idx]] = 'N';
+
+  // Rooks + King: exactly 3 squares remain. Sorted ascending, the king goes in
+  // the middle slot, guaranteeing it ends up strictly between the two rooks.
+  empty = emptyCols().sort((a, b) => a - b);
+  squares[empty[0]] = 'R';
+  squares[empty[1]] = 'K';
+  squares[empty[2]] = 'R';
+
+  return squares.join('');
+}
+
+// Builds a full starting FEN for a fresh Chess960 game (mirrored back ranks,
+// full castling rights, White to move).
+function generateChess960StartFen() {
+  const backRank = generateChess960BackRank();
+  return `${backRank.toLowerCase()}/pppppppp/8/8/8/8/PPPPPPPP/${backRank} w KQkq - 0 1`;
+}
+
+// Derives king/rook home files for castling generation (Chess960-aware) from
+// the CURRENT realBoard + castling rights. A castling right being true means
+// that king/rook pair hasn't moved yet, so it's still sitting on its actual
+// starting square right now - we can just read it straight off the board.
+// If no rights remain at all, the result doesn't matter since it'll never be
+// consulted again. Call this any time realBoard/castling are freshly set
+// from a starting position (new game, FEN import, Chess960 setup, etc).
+function deriveChess960Setup() {
+  chess960Setup = { kingFile: 4, rookKFile: 7, rookQFile: 0 };
+  if (castling.wK || castling.wQ) {
+    for (let c = 0; c < 8; c++) {
+      if (realBoard[7][c]?.type === 'K' && realBoard[7][c]?.color === 'w') { chess960Setup.kingFile = c; break; }
+    }
+  } else if (castling.bK || castling.bQ) {
+    for (let c = 0; c < 8; c++) {
+      if (realBoard[0][c]?.type === 'K' && realBoard[0][c]?.color === 'b') { chess960Setup.kingFile = c; break; }
+    }
+  }
+  if (castling.wK) { for (let c = chess960Setup.kingFile + 1; c < 8; c++) { if (realBoard[7][c]?.type === 'R' && realBoard[7][c]?.color === 'w') { chess960Setup.rookKFile = c; break; } } }
+  if (castling.wQ) { for (let c = chess960Setup.kingFile - 1; c >= 0; c--) { if (realBoard[7][c]?.type === 'R' && realBoard[7][c]?.color === 'w') { chess960Setup.rookQFile = c; break; } } }
+  if (castling.bK) { for (let c = chess960Setup.kingFile + 1; c < 8; c++) { if (realBoard[0][c]?.type === 'R' && realBoard[0][c]?.color === 'b') { chess960Setup.rookKFile = c; break; } } }
+  if (castling.bQ) { for (let c = chess960Setup.kingFile - 1; c >= 0; c--) { if (realBoard[0][c]?.type === 'R' && realBoard[0][c]?.color === 'b') { chess960Setup.rookQFile = c; break; } } }
+}
+
 let realBoard = [];
 let turn = 'w';
 let castling = { wK: true, wQ: true, bK: true, bQ: true };
@@ -19,6 +86,12 @@ let opponentFlipped = false;
 let over = false;
 let viewIndex = 0;
 let liveState = null;
+
+// Chess960 (Fischer Random): king/rook home files, mirrored for both colors.
+// Standard chess keeps the defaults below (king on e-file, rooks on a/h-files),
+// so every hardcoded 4/7/0 in castling logic can be replaced by these without
+// changing normal chess behaviour at all.
+let chess960Setup = { kingFile: 4, rookKFile: 7, rookQFile: 0 };
 
 // Helper to determine if a square is fogged for UI/console access
 function isFogged(r, c) {
@@ -132,7 +205,8 @@ const cloneState = () => ({
   halfMoveClock,
   fullMoveNumber,
   lastMove: lastMove ? { ...lastMove } : null,
-  dice: window.variants && window.variants.allowedDiceTypes ? [...window.variants.allowedDiceTypes] : null
+  dice: window.variants && window.variants.allowedDiceTypes ? [...window.variants.allowedDiceTypes] : null,
+  chess960Setup: { ...chess960Setup }
 });
 
 function restoreState(s) {
@@ -143,6 +217,7 @@ function restoreState(s) {
   halfMoveClock = s.halfMoveClock;
   fullMoveNumber = s.fullMoveNumber;
   lastMove = s.lastMove ? { ...s.lastMove } : null;
+  if (s.chess960Setup) chess960Setup = { ...s.chess960Setup };
   if (window.variants && s.dice) {
     window.variants.allowedDiceTypes = [...s.dice];
   } else if (window.variants) {
@@ -177,10 +252,11 @@ function boardToFen(boardState, activeColor, castlingRights, enPassantSquare) {
   // Why re-verify the King and Rook exist before outputting castling rights in the FEN?
   // Because custom variants like Identity Theft or Draft Mode might have moved or morphed them,
   // leaving the global castling object happily lying to us.
-  const canCastleWK = castlingRights.wK && boardState[7][4]?.type === 'K' && boardState[7][4]?.color === 'w' && boardState[7][7]?.type === 'R' && boardState[7][7]?.color === 'w';
-  const canCastleWQ = castlingRights.wQ && boardState[7][4]?.type === 'K' && boardState[7][4]?.color === 'w' && boardState[7][0]?.type === 'R' && boardState[7][0]?.color === 'w';
-  const canCastleBK = castlingRights.bK && boardState[0][4]?.type === 'K' && boardState[0][4]?.color === 'b' && boardState[0][7]?.type === 'R' && boardState[0][7]?.color === 'b';
-  const canCastleBQ = castlingRights.bQ && boardState[0][4]?.type === 'K' && boardState[0][4]?.color === 'b' && boardState[0][0]?.type === 'R' && boardState[0][0]?.color === 'b';
+  const { kingFile: kf, rookKFile: rkf, rookQFile: rqf } = chess960Setup;
+  const canCastleWK = castlingRights.wK && boardState[7][kf]?.type === 'K' && boardState[7][kf]?.color === 'w' && boardState[7][rkf]?.type === 'R' && boardState[7][rkf]?.color === 'w';
+  const canCastleWQ = castlingRights.wQ && boardState[7][kf]?.type === 'K' && boardState[7][kf]?.color === 'w' && boardState[7][rqf]?.type === 'R' && boardState[7][rqf]?.color === 'w';
+  const canCastleBK = castlingRights.bK && boardState[0][kf]?.type === 'K' && boardState[0][kf]?.color === 'b' && boardState[0][rkf]?.type === 'R' && boardState[0][rkf]?.color === 'b';
+  const canCastleBQ = castlingRights.bQ && boardState[0][kf]?.type === 'K' && boardState[0][kf]?.color === 'b' && boardState[0][rqf]?.type === 'R' && boardState[0][rqf]?.color === 'b';
   const castlingString = (canCastleWK ? 'K' : '') + (canCastleWQ ? 'Q' : '') + (canCastleBK ? 'k' : '') + (canCastleBQ ? 'q' : '');
   fenResult += ` ${activeColor} ${castlingString || '-'} ${enPassantSquare ? squareToAlg(enPassantSquare.r, enPassantSquare.c) : '-'}`;
   return fenResult;
@@ -268,16 +344,46 @@ function movesForPieceType(type, r, c, b, enPassantSquare, castlingRights, color
       if (inBounds(r + rowDelta, c + colDelta) && !isFriend(b[r + rowDelta][c + colDelta], color)) add(r + rowDelta, c + colDelta);
     }
     const bk = color === 'w' ? 7 : 0;
-    if (r === bk && c === 4) {
-      const rookK = b[bk][7];
+    // Castling rights being true implies neither the king nor that rook has moved,
+    // which means the king must currently be sitting on its home file (chess960Setup.kingFile).
+    // Standard chess keeps kingFile=4/rookKFile=7/rookQFile=0, so this is a no-op there.
+    if (r === bk && c === chess960Setup.kingFile) {
+      const rookK = b[bk][chess960Setup.rookKFile];
       const hasRookK = rookK && rookK.color === color && (rookK.type === 'R' || (rookK.types && rookK.types.includes('R')));
-      if ((color === 'w' ? castlingRights.wK : castlingRights.bK) && hasRookK && !b[bk][5] && !b[bk][6] && !isAttacked(bk, 4, color, b) && !isAttacked(bk, 5, color, b) && !isAttacked(bk, 6, color, b)) add(bk, 6, { castle: 'K' });
-      const rookQ = b[bk][0];
+      if ((color === 'w' ? castlingRights.wK : castlingRights.bK) && hasRookK && canCastle960Path(b, bk, c, 6, chess960Setup.rookKFile, 5, color)) {
+        add(bk, 6, { castle: 'K', rookFrom: chess960Setup.rookKFile });
+      }
+      const rookQ = b[bk][chess960Setup.rookQFile];
       const hasRookQ = rookQ && rookQ.color === color && (rookQ.type === 'R' || (rookQ.types && rookQ.types.includes('R')));
-      if ((color === 'w' ? castlingRights.wQ : castlingRights.bQ) && hasRookQ && !b[bk][3] && !b[bk][2] && !b[bk][1] && !isAttacked(bk, 4, color, b) && !isAttacked(bk, 3, color, b) && !isAttacked(bk, 2, color, b)) add(bk, 2, { castle: 'Q' });
+      if ((color === 'w' ? castlingRights.wQ : castlingRights.bQ) && hasRookQ && canCastle960Path(b, bk, c, 2, chess960Setup.rookQFile, 3, color)) {
+        add(bk, 2, { castle: 'Q', rookFrom: chess960Setup.rookQFile });
+      }
     }
   }
   return ms;
+}
+
+// FIDE Chess960 castling legality check, generalized so it also covers standard chess
+// (where it reduces to exactly the old hardcoded a/h-file behaviour):
+// - every square the king travels through (start to end, inclusive) must be empty or
+//   occupied only by the castling king/rook themselves, and must not be attacked
+// - every square the rook travels through (start to end, inclusive) must likewise be
+//   empty or occupied only by the castling king/rook themselves
+function canCastle960Path(b, row, kingFrom, kingTo, rookFrom, rookTo, color) {
+  const minK = Math.min(kingFrom, kingTo), maxK = Math.max(kingFrom, kingTo);
+  const minR = Math.min(rookFrom, rookTo), maxR = Math.max(rookFrom, rookTo);
+  const mustBeClear = new Set();
+  for (let f = minK; f <= maxK; f++) mustBeClear.add(f);
+  for (let f = minR; f <= maxR; f++) mustBeClear.add(f);
+  mustBeClear.delete(kingFrom);
+  mustBeClear.delete(rookFrom);
+  for (const f of mustBeClear) {
+    if (b[row][f]) return false;
+  }
+  for (let f = minK; f <= maxK; f++) {
+    if (isAttacked(row, f, color, b)) return false;
+  }
+  return true;
 }
 
 function pseudoMoves(r, c, b, enPassantSquare, castlingRights) {
@@ -386,8 +492,8 @@ function applyMv(boardState, from, to, flags, promo) {
   const newBoard = cloneBoard(boardState);
   const p = newBoard[from.r][from.c];
 
-  // Identity Theft variant morph handling
-  if (window.variants && window.variants.isIdentityTheftActive) {
+  // Identity Theft variant morph handling (castling never captures, so skip it here)
+  if (window.variants && window.variants.isIdentityTheftActive && flags.castle !== 'K' && flags.castle !== 'Q') {
     let captured = newBoard[to.r][to.c];
     if (flags.enp) {
       const dir = p.color === 'w' ? 1 : -1;
@@ -398,22 +504,28 @@ function applyMv(boardState, from, to, flags, promo) {
     }
   }
 
+  if (flags.castle === 'K' || flags.castle === 'Q') {
+    // Chess960-safe: clear both origin squares before placing either piece, since
+    // the king's destination file and the rook's origin file (or vice versa) can
+    // legitimately coincide once the back rank isn't fixed at e/a/h.
+    const bk = from.r;
+    const rookFromCol = flags.rookFrom;
+    const rookPiece = newBoard[bk][rookFromCol];
+    const kingToCol = to.c;
+    const rookToCol = flags.castle === 'K' ? 5 : 3;
+    newBoard[bk][from.c] = null;
+    newBoard[bk][rookFromCol] = null;
+    newBoard[bk][kingToCol] = p;
+    newBoard[bk][rookToCol] = rookPiece;
+    return newBoard;
+  }
+
   newBoard[to.r][to.c] = p;
   newBoard[from.r][from.c] = null;
 
   if (flags.enp) {
     const dir = p.color === 'w' ? 1 : -1;
     newBoard[to.r + dir][to.c] = null;
-  }
-  if (flags.castle === 'K') {
-    const bk = from.r;
-    newBoard[bk][5] = newBoard[bk][7];
-    newBoard[bk][7] = null;
-  }
-  if (flags.castle === 'Q') {
-    const bk = from.r;
-    newBoard[bk][3] = newBoard[bk][0];
-    newBoard[bk][0] = null;
   }
   if (promo) {
     p.type = promo;
@@ -473,19 +585,21 @@ function updateCastlingAfterMove(piece, from, to) {
     if (turn === 'w') { castling.wK = false; castling.wQ = false; }
     else              { castling.bK = false; castling.bQ = false; }
   }
-  
-  // Any move from a corner square revokes that rook's castling rights,
-  // regardless of what piece it currently is (due to Identity Theft).
-  if (from.r === 7 && from.c === 7) castling.wK = false;
-  if (from.r === 7 && from.c === 0) castling.wQ = false;
-  if (from.r === 0 && from.c === 7) castling.bK = false;
-  if (from.r === 0 && from.c === 0) castling.bQ = false;
-  
-  // Capturing into a corner square revokes castling rights for that corner.
-  if (to.r === 7 && to.c === 7) castling.wK = false;
-  if (to.r === 7 && to.c === 0) castling.wQ = false;
-  if (to.r === 0 && to.c === 7) castling.bK = false;
-  if (to.r === 0 && to.c === 0) castling.bQ = false;
+
+  // Any move from a rook's home square revokes that side's castling rights,
+  // regardless of what piece it currently is (due to Identity Theft). Home
+  // squares come from chess960Setup, which defaults to a/h-files in standard chess.
+  const { rookKFile, rookQFile } = chess960Setup;
+  if (from.r === 7 && from.c === rookKFile) castling.wK = false;
+  if (from.r === 7 && from.c === rookQFile) castling.wQ = false;
+  if (from.r === 0 && from.c === rookKFile) castling.bK = false;
+  if (from.r === 0 && from.c === rookQFile) castling.bQ = false;
+
+  // Capturing into a rook's home square revokes castling rights for that side.
+  if (to.r === 7 && to.c === rookKFile) castling.wK = false;
+  if (to.r === 7 && to.c === rookQFile) castling.wQ = false;
+  if (to.r === 0 && to.c === rookKFile) castling.bK = false;
+  if (to.r === 0 && to.c === rookQFile) castling.bQ = false;
 }
 
 // --- FEN/PGN IMPORT & EXPORT --------------------------------------------------
@@ -573,6 +687,9 @@ function importFen(fenStr, silent = false) {
     fullMoveNumber = (parts[5]) ? parseInt(parts[5]) : 1;
     if (isNaN(fullMoveNumber)) fullMoveNumber = 1;
 
+    // Derive king/rook home files for castling generation (Chess960-aware).
+    deriveChess960Setup();
+
     // Check if the FEN has a dice chess suffix (7th field or later)
     const dicePart = parts.find(p => p && p.startsWith('d:'));
     if (dicePart) {
@@ -649,6 +766,9 @@ function importPgn(pgnStr) {
 
     const fogMatch = pgnStr.match(/\[(?:ChessologyVariant|Variant)\s+"Fog\s+of\s+War"]/i);
     window.variants.fogOfWarEnabled = !!fogMatch;
+
+    const chess960Match = pgnStr.match(/\[(?:ChessologyVariant|Variant)\s+"Chess960"]/i);
+    window.variants.chess960Enabled = !!chess960Match;
 
     const fenMatch = pgnStr.match(/\[FEN\s+"(.*?)"]/i);
     const startingFen = fenMatch ? fenMatch[1].trim() : INIT_FEN;
@@ -820,6 +940,9 @@ function importPgn(pgnStr) {
 
       const draftToggle = document.getElementById('draftModeToggleOffline');
       if (draftToggle) draftToggle.checked = window.variants.draftEnabled;
+
+      const chess960Toggle = document.getElementById('chess960ToggleOffline');
+      if (chess960Toggle) chess960Toggle.checked = window.variants.chess960Enabled;
     }
 
     if (window.multi && window.multi.active && window.app && window.app.gameState === 'playing' && window.variants) {
