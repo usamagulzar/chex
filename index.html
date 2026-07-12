@@ -285,18 +285,8 @@
    <!-- Board Editor Placement UI Card -->
     <div class="card" id="editorUI" style="display:none"></div>
 
-    <!-- About Developer (footer) -->
-    <div style="flex:1; display:flex; align-items:flex-end; justify-content:center; padding:8px 0;">
-      <div style="display:flex; align-items:center; gap:8px; font-size:0.68rem; color:var(--muted);">
-        <span>Usama Gulzar</span>
-        <span style="opacity:0.4">·</span>
-        <a href="https://github.com/usamagulzar" target="_blank" rel="noopener" style="color:var(--muted); text-decoration:none;" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='var(--muted)'">GitHub</a>
-        <span style="opacity:0.4">·</span>
-        <a href="mailto:ugulzar.pk@gmail.com" style="color:var(--muted); text-decoration:none;" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='var(--muted)'">Email</a>
-      </div>
-    </div>
   </div>
-  
+
   <div class="board-col">
     <!-- Black player (top) -->
     <div class="player-bar" id="barB">
@@ -387,6 +377,16 @@
         </div>
       </div>
     </div>
+  </div>
+
+  <!-- About Developer (footer) - own row on desktop, pushed to the very end
+       of the page on mobile via the .dev-footer order rule -->
+  <div class="dev-footer">
+    <span>Usama Gulzar</span>
+    <span style="opacity:0.4">·</span>
+    <a href="https://github.com/usamagulzar" target="_blank" rel="noopener" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='var(--muted)'">GitHub</a>
+    <span style="opacity:0.4">·</span>
+    <a href="mailto:ugulzar.pk@gmail.com" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='var(--muted)'">Email</a>
   </div>
 </div>
 
