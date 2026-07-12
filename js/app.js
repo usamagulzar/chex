@@ -374,7 +374,7 @@ if ((isEvalVisible || isBestMoveVisible) && window.analysis && !window.variants.
 	  let netW = [], netB = [];
 	
 	  types.forEach(t => {
-	    const diff = wCounts[t] + bCounts[t];
+	    const diff = wCounts[t] - bCounts[t];
 	    if (diff > 0) {
 	      for (let i = 0; i < diff; i++) netW.push({ color: 'b', type: t });
 	    } else if (diff < 0) {
