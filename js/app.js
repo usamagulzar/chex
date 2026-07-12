@@ -81,7 +81,7 @@ window.app = {
       const showResign = gameActive && !over && !window.variants.isDraftActive && !this.isReviewMode;
       resignBtn.style.display = showResign ? 'block' : 'none';
       const isAbort = moveHistory.length < 2;
-      resignBtn.textContent = (multi.active && isAbort) ? 'Abort' : 'Resign';
+      resignBtn.textContent = isAbort ? 'Abort' : 'Resign';
     }
     if (drawBtn) {
       const showDraw = gameActive && !over && !window.variants.isDraftActive && !this.isReviewMode;
@@ -101,6 +101,15 @@ window.app = {
     }
     if (returnToMenuBtn) {
       returnToMenuBtn.style.display = (gameActive && (over || this.isReviewMode)) ? 'block' : 'none';
+    }
+
+    // Clear Board is only for setting up a fresh position; hide it once a
+    // game is actively being played so it can't be mistaken for (or misused
+    // as) a way to bail out mid-game. Resign/Abort covers that instead.
+    const histClearBtn = document.getElementById('histClearBtn');
+    if (histClearBtn) {
+      const showClearBoard = !(this.gameState === 'playing' && !over);
+      histClearBtn.hidden = !showClearBoard;
     }
 
 
