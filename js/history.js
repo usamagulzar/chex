@@ -18,6 +18,7 @@ window.historyStorage = {
       
       request.onsuccess = (e) => {
         this.db = e.target.result;
+        this.purgeOldGames().catch(err => console.error('Game history purge failed:', err));
         resolve(this.db);
       };
       
@@ -25,6 +26,34 @@ window.historyStorage = {
         console.error('IndexedDB open error:', e.target.error);
         reject(e.target.error);
       };
+    });
+  },
+
+  // Removes any saved game older than 7 days. Runs once per session, right
+  // after the DB opens (see init() above), so old local game history is
+  // cleaned up automatically without the user having to do anything.
+  async purgeOldGames() {
+    const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+    const cutoff = Date.now() - SEVEN_DAYS_MS;
+
+    return new Promise((resolve, reject) => {
+      const transaction = this.db.transaction(['games'], 'readwrite');
+      const store = transaction.objectStore('games');
+      const request = store.openCursor();
+
+      request.onsuccess = (e) => {
+        const cursor = e.target.result;
+        if (!cursor) return; // no resolve here; transaction.oncomplete below handles it
+        const game = cursor.value;
+        if (typeof game.date === 'number' && game.date < cutoff) {
+          cursor.delete();
+        }
+        cursor.continue();
+      };
+      request.onerror = (e) => reject(e.target.error);
+
+      transaction.oncomplete = () => resolve();
+      transaction.onerror = (e) => reject(e.target.error);
     });
   },
 
