@@ -57,9 +57,12 @@ window.auth = {
       window.multi.initPeer();
     }
 
-    if (!auth.currentUser) {
-      this.ensureAnonymousAuth();
-    }
+    // Don't call ensureAnonymousAuth() here. auth.currentUser can still read
+    // null for a moment on load even when a persisted Google session exists
+    // and is about to be restored — signing in anonymously right now would
+    // clobber that restoration before it lands. The onAuthStateChanged
+    // 'else' branch below already handles the anonymous fallback, and only
+    // runs once Firebase has definitively confirmed there's no session.
 
     // Listen for Firebase Auth state changes
     auth.onAuthStateChanged(async (user) => {
