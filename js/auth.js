@@ -68,6 +68,15 @@ window.auth = {
         this.isAnonymous = !!user.isAnonymous;
         this.isAuthenticated = !user.isAnonymous;
 
+        // Sync the sign-in/out button state immediately — don't wait on the
+        // Firestore username lookup below. That read can take a noticeable
+        // moment on a slow connection, and during that gap the UI was still
+        // showing whatever init()'s early, pre-auth syncAuthUI() call had
+        // painted (i.e. "Sign in", since isAuthenticated defaults to false).
+        if (window.ui && typeof window.ui.syncAuthUI === 'function') {
+          window.ui.syncAuthUI();
+        }
+
         if (user.isAnonymous) {
           let currentName = localStorage.getItem('chessology_username') || '';
           if (!currentName.toLowerCase().startsWith('guest')) {

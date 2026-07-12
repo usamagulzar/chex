@@ -71,13 +71,25 @@ window.multi = {
 
   listenForChallenges() {
     if (this.unsubChallenges) this.unsubChallenges();
-    
+    // Every time this listener (re)attaches — which happens more than once
+    // per session: once from initPeer() at boot with a placeholder peerId,
+    // again once real auth/username settles, again on retry after an error —
+    // Firestore fires 'added' for every doc CURRENTLY matching the query,
+    // not just genuinely new ones. Without this guard, a still-pending
+    // challenge gets handed to onReceiveChallenge() again on every
+    // re-attach, popping the same challenge popup back up repeatedly.
+    if (!this._seenChallengeIds) this._seenChallengeIds = new Set();
+
     this.unsubChallenges = db.collection('challenges')
       .where('target', '==', this.peerId)
       .where('status', '==', 'pending')
       .onSnapshot((snapshot) => {
         snapshot.docChanges().forEach((change) => {
           if (change.type === 'added') {
+            const id = change.doc.id;
+            if (this._seenChallengeIds.has(id)) return; // already surfaced this session
+            this._seenChallengeIds.add(id);
+
             const data = change.doc.data();
             const createdAtTime = data.createdAt ? data.createdAt.toDate().getTime() : Date.now();
             const age = Date.now() - createdAtTime;
@@ -90,7 +102,7 @@ window.multi = {
             
             if (window.app && window.app.onReceiveChallenge) {
               window.app.onReceiveChallenge({
-                challengeId: change.doc.id,
+                challengeId: id,
                 sender: data.sender,
                 variants: data.variants,
                 colorReq: data.colorReq,
@@ -98,6 +110,11 @@ window.multi = {
                 createdAtTime: createdAtTime
               });
             }
+          } else if (change.type === 'removed') {
+            // Freed up (accepted/declined/expired elsewhere) — allow a brand
+            // new challenge that reuses... it never reuses IDs, but keep the
+            // set from growing unbounded over a long session.
+            this._seenChallengeIds.delete(change.doc.id);
           }
         });
       }, (err) => {
