@@ -1980,6 +1980,10 @@ if (window.variants && window.variants.diceChessEnabled) {
       alert("Please enter a username to challenge.");
       return;
     }
+    if (window.auth && window.auth.username && targetUser.trim().toLowerCase() === window.auth.username.toLowerCase()) {
+      alert("You can't send a challenge to yourself.");
+      return;
+    }
 
     const colorBtn = document.querySelector('#lobbyColorSeg .segmented-btn.active');
     const colorReq = colorBtn ? colorBtn.dataset.color : 'random';
