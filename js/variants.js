@@ -143,12 +143,10 @@ rollDice(color) {
       this.allowedDiceTypes = [shuffled[0], shuffled[1]];
     }
 
-    // NEW LOGIC: Whoever just rolled the dice sends it to Firebase.
+    // Whoever just rolled the dice sends it to Firebase via its own
+    // dedicated field (NOT the shared `signal` channel - that's used for
+    // one-off proposals like undo/draw/reset, and this fires on every move).
     if (window.multi && window.multi.active) {
-      window.multi.sendSignal('dice-roll', {
-        allowedDiceTypes: this.allowedDiceTypes
-      });
-      
       if (window.multi.gameId) {
         rtdb.ref('games/' + window.multi.gameId).update({
           currentDice: this.allowedDiceTypes.join(',')

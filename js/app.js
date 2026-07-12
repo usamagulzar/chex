@@ -2624,6 +2624,45 @@ if (window.variants.handAndBrainEnabled && !window.variants.draftEnabled) {
     this.renderAll();
   },
 
+	// Called by importPgn() (engine.js) right after replaying a synced PGN,
+	// when the resulting position is itself checkmate/stalemate/a draw.
+	// This is what lets the MATED player's own client correctly show
+	// "Checkmate! X wins." instead of a stale "is in check!" status -
+	// previously nothing on this client ever re-checked for mate once the
+	// move arrived purely as a PGN import.
+	markRemoteGameOver(info) {
+	  if (this.gameState === 'setup' || over) return;
+	  const { isMate, isStale, isRep, isInsuff, is50, endTurn } = info;
+	  let title, sub;
+	  if (isMate) {
+	    title = (endTurn === 'w' ? 'Black' : 'White') + ' Wins!';
+	    sub = 'by checkmate';
+	  } else if (isStale) {
+	    title = 'Draw'; sub = 'Stalemate';
+	  } else if (is50) {
+	    title = 'Draw'; sub = '50-move rule';
+	  } else if (isRep) {
+	    title = 'Draw'; sub = 'Threefold repetition';
+	  } else if (isInsuff) {
+	    title = 'Draw'; sub = 'Insufficient material';
+	  } else {
+	    return;
+	  }
+	  over = true;
+	  this.isReviewMode = true;
+	  this.clearSessionState();
+	  if (multi.active) {
+	    multi.saveGameResult(title);
+	  }
+	  this.saveGameToHistory(title);
+	  const rt = document.getElementById('resultTitle'); if (rt) rt.textContent = title;
+	  const rs = document.getElementById('resultSub'); if (rs) rs.textContent = sub;
+	  const rb = document.getElementById('resultBanner'); if (rb) rb.classList.add('show');
+	  window.audio.playSound('end');
+	  if (multi.active) multi.detachListeners();
+	  this.renderAll();
+	},
+
 	onRemoteGameEnded(resultText) {
 	  if (over) return;
 	  over = true;

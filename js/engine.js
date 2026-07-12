@@ -923,6 +923,35 @@ function importPgn(pgnStr) {
       }
     }
 
+    // A client that only ever sees a game-ending move via PGN replay (e.g.
+    // the mated player's own client, importing the winning move sent by
+    // their opponent) never runs the local move-execution / doEnd logic
+    // that normally detects checkmate/stalemate/draws. Without this, `over`
+    // stays false and the status bar keeps reporting "in check" (or worse,
+    // "to move") forever instead of "Checkmate" - re-derive it here.
+    if (parsedMoves.length > 0 && window.app && window.app.gameState !== 'setup' && !over) {
+      const nxtMoves = allLegalMoves(turn, realBoard, enPassantSquare, castling, true);
+      const chkNow = inCheck(turn, realBoard);
+      const isMateNow = nxtMoves.length === 0 && chkNow;
+      const isStaleNow = nxtMoves.length === 0 && !chkNow;
+      const currFenNow = boardToFen(realBoard, turn, castling, enPassantSquare);
+      const countsNow = positionHistory();
+      const isRepNow = countsNow[currFenNow] >= 3;
+      const isInsuffNow = !window.variants.fogOfWarEnabled && isInsufficientMaterial(realBoard);
+      if (isMateNow || isStaleNow || halfMoveClock >= 100 || isRepNow || isInsuffNow) {
+        if (window.app.markRemoteGameOver) {
+          window.app.markRemoteGameOver({
+            isMate: isMateNow,
+            isStale: isStaleNow,
+            isRep: isRepNow,
+            isInsuff: isInsuffNow,
+            is50: halfMoveClock >= 100,
+            endTurn: turn
+          });
+        }
+      }
+    }
+
     if (window.app) {
       const diceToggle = document.getElementById('diceChessToggleOffline');
       if (diceToggle) diceToggle.checked = window.variants.diceChessEnabled;

@@ -392,19 +392,27 @@ window.multi = {
       if (!snapshot.exists()) return;
       const data = snapshot.val();
 
-		// 0. Pick up a game-ending result written by the other client (e.g. their
-		// auto-resign after our presence timed out) even if we never got a live signal.
-		if (data.result && window.app && window.app.onRemoteGameEnded) {
-		  window.app.onRemoteGameEnded(data.result);
-		}
-		
-      // 1. Process PGN
+      // 0. Process PGN first, so the board/turn reflect the final position
+      // before anything else runs. importPgn() independently re-derives
+      // checkmate/stalemate/draw state for that position (see engine.js),
+      // which must land before step 1 below or a position-based ending
+      // (checkmate) could be clobbered by, or race against, the separate
+      // `result` field write.
       if (data.pgn !== undefined && data.pgn !== this.lastProcessedPgn) {
         this.lastProcessedPgn = data.pgn;
         if (window.app && window.app.onRemoteMove) {
           window.app.onRemoteMove(data.pgn);
         }
       }
+
+		// 1. Pick up a game-ending result written by the other client for
+		// reasons that AREN'T derivable from the board position alone (e.g.
+		// resign, abort, timeout, draw-by-agreement, or their auto-resign
+		// after our presence timed out). onRemoteGameEnded() no-ops if the
+		// game was already concluded above from the position itself.
+		if (data.result && window.app && window.app.onRemoteGameEnded) {
+		  window.app.onRemoteGameEnded(data.result);
+		}
 	  
 if (data.currentDice !== undefined && window.variants && window.variants.diceChessEnabled) {
         // Only accept network dice if it is the opponent's turn.
