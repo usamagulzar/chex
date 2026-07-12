@@ -893,7 +893,7 @@ function importPgn(pgnStr) {
 
         if (idCode && window.variants.identityTheftEnabled && window.variants.identityTheftMode === 'append') {
           const p = realBoard[matched.to.r][matched.to.c];
-          if (p && p.types && p.types.length > 2) {
+          if (p) {
             p.types = idCode.split('');
             p.types.sort((a, b) => (PIECE_VALUES[b] || 0) - (PIECE_VALUES[a] || 0));
             p.type = p.types[0];
@@ -975,3 +975,4 @@ window.getVisibleSquares = function(playerColor) {
   }
   return visible;
 };
+
