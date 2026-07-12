@@ -127,6 +127,24 @@ body{display:flex;flex-direction:column;align-items:center;justify-content:cente
   overflow-x: hidden;
 }
 
+/* Dev credit footer: its own row spanning the whole grid on desktop.
+   On mobile (see media query below) it gets order:4 so it always renders
+   after the board/left-panel/right-panel instead of in the middle of the page. */
+.dev-footer {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding-top: 4px;
+  font-size: 0.68rem;
+  color: var(--muted);
+}
+.dev-footer a {
+  color: var(--muted);
+  text-decoration: none;
+}
+
 /* player bars */
 .board-col{display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0;position:relative;z-index:10}
 .player-bar{
@@ -395,7 +413,7 @@ body{display:flex;flex-direction:column;align-items:center;justify-content:cente
 }
 
 /* Responsive */
-@media(max-width:960px){
+@media (max-width:960px), (max-aspect-ratio: 1/1){
   html, body {
     overflow: auto;
     height: auto;
@@ -431,6 +449,12 @@ body{display:flex;flex-direction:column;align-items:center;justify-content:cente
     width: 100%;
     min-width: unset;
     height: auto;
+  }
+  .dev-footer {
+    order: 4;
+    width: 100%;
+    max-width: var(--bsz);
+    padding: 12px 0 4px;
   }
   .right-panel {
     order: 3;
