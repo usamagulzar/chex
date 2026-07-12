@@ -1,7 +1,7 @@
 // --- CHEX SERVICE WORKER ----------------------------------------------------
 // Bump this on every deploy that changes any cached file. Old caches are
 // purged automatically on activate, so this is the only version knob you need.
-const CACHE_VERSION = 'chex-v1';
+const CACHE_VERSION = 'chex-v2';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 
