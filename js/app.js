@@ -103,13 +103,13 @@ window.app = {
       returnToMenuBtn.style.display = (gameActive && (over || this.isReviewMode)) ? 'block' : 'none';
     }
 
-    // Clear Board is only for setting up a fresh position; hide it once a
+    // Clear Board is only for setting up a fresh position; disable it once a
     // game is actively being played so it can't be mistaken for (or misused
     // as) a way to bail out mid-game. Resign/Abort covers that instead.
     const histClearBtn = document.getElementById('histClearBtn');
     if (histClearBtn) {
-      const showClearBoard = !(this.gameState === 'playing' && !over);
-      histClearBtn.hidden = !showClearBoard;
+      const isPlayingLive = (this.gameState === 'playing' && !over);
+      histClearBtn.disabled = isPlayingLive;
     }
 
 
@@ -2394,44 +2394,83 @@ if (window.variants.diceChessEnabled && gameData.currentDice) {
     const nameEl = document.getElementById('challengeSenderName');
     if (nameEl) nameEl.textContent = data.sender;
 
-    const list = document.getElementById('challengeVariantsList');
-    const v = data.variants;
+    const avatarEl = document.getElementById('challengeSenderAvatar');
+    if (avatarEl) avatarEl.textContent = (data.sender || '?').charAt(0).toUpperCase();
+
+    const list = document.getElementById('challengeDetailsList');
     list.replaceChildren();
 
-    const variantLines = [];
-    if (v.diceChessEnabled) variantLines.push('Dice Chess');
-    if (v.fogOfWarEnabled) variantLines.push('Fog of War');
-    if (v.draftEnabled) variantLines.push('Draft Mode');
-    if (v.identityTheftEnabled) variantLines.push(`Identity Theft (${v.identityTheftMode})`);
-	if (v.handAndBrainEnabled) variantLines.push('Hand and Brain');
-    if (v.chess960Enabled) variantLines.push('Chess960');
+    const ICONS_ = {
+      clock: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 16 14"/></svg>',
+      variant: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 12h16M4 17h10"/></svg>',
+      color: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor" stroke="none"/></svg>'
+    };
 
-    if (variantLines.length === 0) {
-      const standardLine = document.createElement('div');
-      standardLine.style.color = 'var(--dim)';
-      standardLine.textContent = 'Standard Chess';
-      list.appendChild(standardLine);
-    } else {
-      variantLines.forEach(label => {
-        const line = document.createElement('div');
-        line.textContent = `• ${label}`;
-        list.appendChild(line);
-      });
+    // valueContent: a string (rendered as text) or an array of DOM nodes (e.g. chips)
+    const makeRow = (iconKey, label, valueContent) => {
+      const row = document.createElement('div');
+      row.className = 'challenge-detail-row';
+
+      const iconSpan = document.createElement('span');
+      iconSpan.className = 'challenge-detail-icon';
+      iconSpan.innerHTML = ICONS_[iconKey];
+
+      const labelSpan = document.createElement('span');
+      labelSpan.className = 'challenge-detail-label';
+      labelSpan.textContent = label;
+
+      const valueSpan = document.createElement('span');
+      valueSpan.className = 'challenge-detail-value';
+      if (Array.isArray(valueContent)) {
+        valueContent.forEach(node => valueSpan.appendChild(node));
+      } else {
+        valueSpan.textContent = valueContent;
+      }
+
+      row.appendChild(iconSpan);
+      row.appendChild(labelSpan);
+      row.appendChild(valueSpan);
+      return row;
+    };
+
+    // Time control row
+    const cc = data.clockConfig;
+    let timeStr = 'Unlimited';
+    if (cc && (cc.wTime > 0 || cc.bTime > 0)) {
+      const mins = Math.round(cc.wTime / 60);
+      timeStr = cc.wInc > 0 ? `${mins} min + ${cc.wInc}s` : `${mins} min`;
     }
+    list.appendChild(makeRow('clock', 'Time', timeStr));
 
-    if (data.colorReq !== 'random') {
-      const colorLine = document.createElement('div');
-      colorLine.style.marginTop = '4px';
-      colorLine.style.color = 'var(--text)';
+    // Variant row (chips)
+    const v = data.variants;
+    const variantLabels = [];
+    if (v.diceChessEnabled) variantLabels.push('Dice Chess');
+    if (v.fogOfWarEnabled) variantLabels.push('Fog of War');
+    if (v.draftEnabled) variantLabels.push('Draft Mode');
+    if (v.identityTheftEnabled) variantLabels.push(`Identity Theft (${v.identityTheftMode})`);
+    if (v.handAndBrainEnabled) variantLabels.push('Hand and Brain');
+    if (v.chess960Enabled) variantLabels.push('Chess960');
+    if (variantLabels.length === 0) variantLabels.push('Standard Chess');
 
-      const label = document.createElement('strong');
-      label.style.color = '#fff';
-      label.textContent = myColor === 'w' ? 'White' : 'Black';
+    const chipNodes = variantLabels.map(label => {
+      const chip = document.createElement('span');
+      chip.className = 'challenge-variant-chip';
+      chip.textContent = label;
+      return chip;
+    });
+    list.appendChild(makeRow('variant', 'Variant', chipNodes));
 
-      colorLine.append('You will play as: ');
-      colorLine.appendChild(label);
-      list.appendChild(colorLine);
-    }
+    // Color row
+    const colorLabel = data.colorReq === 'random' ? 'Random' : (myColor === 'w' ? 'White' : 'Black');
+    const dot = document.createElement('span');
+    dot.className = 'challenge-color-dot';
+    dot.style.background = data.colorReq === 'random'
+      ? 'linear-gradient(135deg,#fff 50%,#111 50%)'
+      : (myColor === 'w' ? '#fff' : '#111');
+    const colorText = document.createTextNode(colorLabel);
+    list.appendChild(makeRow('color', 'Color', [dot, colorText]));
+
     document.getElementById('challengePopup').style.display = 'block';
 
     if (this.challengePopupTimeout) clearTimeout(this.challengePopupTimeout);
@@ -3002,25 +3041,43 @@ if (window.variants.handAndBrainEnabled && !window.variants.draftEnabled) {
 
         const buttonGroup = document.createElement('div');
         buttonGroup.style.display = 'flex';
-        buttonGroup.style.gap = '6px';
+        buttonGroup.style.gap = '2px';
 
-        const reviewBtn = document.createElement('button');
-        reviewBtn.className = 'btn';
-        reviewBtn.style.padding = '4px 8px';
-        reviewBtn.style.fontSize = '0.7rem';
-        reviewBtn.style.minWidth = 'unset';
-        reviewBtn.style.background = 'var(--gold)';
-        reviewBtn.style.color = '#000';
-        reviewBtn.textContent = 'Review';
+        const makeIconBtn = (svgHtml, title, extraClass) => {
+          const btn = document.createElement('button');
+          btn.className = 'hist-item-icon-btn' + (extraClass ? ' ' + extraClass : '');
+          btn.title = title;
+          btn.setAttribute('aria-label', title);
+          btn.innerHTML = svgHtml;
+          return btn;
+        };
+
+        const starIcon = (filled) => `<svg viewBox="0 0 24 24" width="15" height="15" fill="${filled ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`;
+        const reviewIcon = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
+        const deleteIcon = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>`;
+
+        const starBtn = makeIconBtn(starIcon(!!g.starred), g.starred ? 'Unstar (allow auto-delete after 7 days)' : 'Star (keep forever)', 'star' + (g.starred ? ' active' : ''));
+        starBtn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          const newStarred = !g.starred;
+          starBtn.disabled = true;
+          try {
+            await window.historyStorage.setStarred(g.id, newStarred);
+            g.starred = newStarred;
+            starBtn.innerHTML = starIcon(newStarred);
+            starBtn.classList.toggle('active', newStarred);
+            starBtn.title = newStarred ? 'Unstar (allow auto-delete after 7 days)' : 'Star (keep forever)';
+            starBtn.setAttribute('aria-label', starBtn.title);
+          } catch (err) {
+            console.error('Failed to update starred state:', err);
+          }
+          starBtn.disabled = false;
+        });
+
+        const reviewBtn = makeIconBtn(reviewIcon, 'Review this game');
         reviewBtn.addEventListener('click', () => this.reviewPastGame(g));
 
-        const deleteBtn = document.createElement('button');
-        deleteBtn.className = 'btn';
-        deleteBtn.style.padding = '4px 8px';
-        deleteBtn.style.fontSize = '0.7rem';
-        deleteBtn.style.minWidth = 'unset';
-        deleteBtn.style.color = '#ff4444';
-        deleteBtn.textContent = 'Delete';
+        const deleteBtn = makeIconBtn(deleteIcon, 'Delete from history', 'danger');
         deleteBtn.addEventListener('click', async (e) => {
           e.stopPropagation();
           if (confirm('Delete this game from history?')) {
@@ -3029,6 +3086,7 @@ if (window.variants.handAndBrainEnabled && !window.variants.draftEnabled) {
           }
         });
 
+        buttonGroup.appendChild(starBtn);
         buttonGroup.appendChild(reviewBtn);
         buttonGroup.appendChild(deleteBtn);
 

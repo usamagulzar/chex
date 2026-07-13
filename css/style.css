@@ -291,7 +291,17 @@ body{display:flex;flex-direction:column;align-items:center;justify-content:cente
 .hist-nav-btn:disabled{opacity:.35;cursor:default;pointer-events:none}
 .hist-clear-btn{flex:1;min-height:36px;display:flex;align-items:center;justify-content:center;gap:5px;padding:8px 6px;border-radius:6px;border:none;border-bottom:3px solid rgba(0,0,0,0.25);background:var(--panel);color:var(--dim);font-family:'Inter',sans-serif;font-size:.68rem;font-weight:700;letter-spacing:.03em;text-transform:uppercase;cursor:pointer;white-space:nowrap;transition:transform .05s,border-bottom-width .05s,filter .1s,color .1s}
 .hist-clear-btn:active{transform:translateY(3px);border-bottom-width:0;box-shadow:none}
+.hist-clear-btn:disabled{opacity:.35;cursor:default;pointer-events:none}
 .hist-clear-btn[hidden]{display:none}
+
+.hist-item-icon-btn{display:flex;align-items:center;justify-content:center;width:28px;height:28px;padding:0;border-radius:6px;border:none;background:transparent;color:var(--dim);cursor:pointer;transition:background .1s,color .1s,transform .05s}
+.hist-item-icon-btn:hover{background:var(--panel);color:var(--text)}
+.hist-item-icon-btn:active{transform:translateY(1px)}
+.hist-item-icon-btn:disabled{opacity:.4;pointer-events:none}
+.hist-item-icon-btn.danger:hover{color:#ff4444}
+.hist-item-icon-btn.star{color:var(--dim)}
+.hist-item-icon-btn.star:hover{color:var(--gold)}
+.hist-item-icon-btn.star.active{color:var(--gold)}
 
 /* promotion */
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.72);display:flex;align-items:center;justify-content:center;z-index:1000;opacity:0;pointer-events:none;transition:opacity .16s}
@@ -317,6 +327,20 @@ body{display:flex;flex-direction:column;align-items:center;justify-content:cente
   animation: slideUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 @keyframes slideUp { from { transform: translateY(100px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+.challenge-body{padding:14px}
+.challenge-sender-row{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.challenge-avatar{width:38px;height:38px;border-radius:50%;background:var(--gold);color:#000;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1.05rem;flex-shrink:0;text-transform:uppercase;font-family:'Inter',sans-serif}
+.challenge-sender-name{font-size:0.95rem;font-weight:700;color:var(--text);font-family:'Inter',sans-serif}
+.challenge-sender-sub{font-size:0.7rem;color:var(--dim)}
+.challenge-details{display:flex;flex-direction:column;margin-bottom:12px;border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.challenge-detail-row{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--panel2)}
+.challenge-detail-row + .challenge-detail-row{border-top:1px solid var(--border)}
+.challenge-detail-icon{width:16px;height:16px;color:var(--dim);flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.challenge-detail-label{font-size:0.66rem;color:var(--dim);text-transform:uppercase;letter-spacing:.03em;width:50px;flex-shrink:0}
+.challenge-detail-value{font-size:0.8rem;color:var(--text);font-weight:600;flex:1;display:flex;flex-wrap:wrap;align-items:center;gap:4px}
+.challenge-variant-chip{display:inline-block;background:rgba(77,144,240,.14);color:var(--gold);font-size:0.66rem;font-weight:700;padding:2px 7px;border-radius:10px}
+.challenge-color-dot{width:13px;height:13px;border-radius:50%;display:inline-block;border:1px solid var(--border);flex-shrink:0}
 
 /* Fog of War Variant */
 .sq.fog .piece{display:none!important}

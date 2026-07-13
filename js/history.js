@@ -29,9 +29,11 @@ window.historyStorage = {
     });
   },
 
-  // Removes any saved game older than 7 days. Runs once per session, right
-  // after the DB opens (see init() above), so old local game history is
-  // cleaned up automatically without the user having to do anything.
+  // Removes any saved game older than 7 days, except ones the user has
+  // starred — starring a game is how you keep it around indefinitely.
+  // Runs once per session, right after the DB opens (see init() above), so
+  // old local game history is cleaned up automatically without the user
+  // having to do anything.
   async purgeOldGames() {
     const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
     const cutoff = Date.now() - SEVEN_DAYS_MS;
@@ -45,7 +47,7 @@ window.historyStorage = {
         const cursor = e.target.result;
         if (!cursor) return; // no resolve here; transaction.oncomplete below handles it
         const game = cursor.value;
-        if (typeof game.date === 'number' && game.date < cutoff) {
+        if (typeof game.date === 'number' && game.date < cutoff && !game.starred) {
           cursor.delete();
         }
         cursor.continue();
@@ -62,10 +64,18 @@ window.historyStorage = {
     return new Promise((resolve, reject) => {
       const transaction = this.db.transaction(['games'], 'readwrite');
       const store = transaction.objectStore(['games']);
-      const request = store.put(game);
-      
-      request.onsuccess = () => resolve();
-      request.onerror = (e) => reject(e.target.error);
+      const getRequest = store.get(game.id);
+
+      getRequest.onsuccess = () => {
+        const existing = getRequest.result;
+        if (existing && existing.starred && game.starred === undefined) {
+          game.starred = true;
+        }
+        const putRequest = store.put(game);
+        putRequest.onsuccess = () => resolve();
+        putRequest.onerror = (e) => reject(e.target.error);
+      };
+      getRequest.onerror = (e) => reject(e.target.error);
     });
   },
 
@@ -95,6 +105,27 @@ window.historyStorage = {
       
       request.onsuccess = () => resolve();
       request.onerror = (e) => reject(e.target.error);
+    });
+  },
+
+  // Toggles/sets the starred flag on a saved game. Starred games are
+  // exempt from the 7-day auto-purge (see purgeOldGames above).
+  async setStarred(gameId, starred) {
+    await this.init();
+    return new Promise((resolve, reject) => {
+      const transaction = this.db.transaction(['games'], 'readwrite');
+      const store = transaction.objectStore(['games']);
+      const getRequest = store.get(gameId);
+
+      getRequest.onsuccess = () => {
+        const game = getRequest.result;
+        if (!game) return resolve(false);
+        game.starred = !!starred;
+        const putRequest = store.put(game);
+        putRequest.onsuccess = () => resolve(true);
+        putRequest.onerror = (e) => reject(e.target.error);
+      };
+      getRequest.onerror = (e) => reject(e.target.error);
     });
   }
 };
