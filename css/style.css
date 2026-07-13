@@ -467,6 +467,19 @@ body{display:flex;flex-direction:column;align-items:center;justify-content:cente
   .hist-body {
     height: 140px;
     flex: none;
+    order: 3;
+  }
+  .hist-card {
+    display: flex;
+    flex-direction: column;
+  }
+  .hist-card .card-hd {
+    order: 1;
+  }
+  .hist-card .hist-footer {
+    order: 2;
+    border-top: none;
+    border-bottom: 1px solid var(--border);
   }
 
   /* Setup Flow Optimization on Mobile: Swap ordering so setup card is at the top,
