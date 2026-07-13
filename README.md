@@ -9,7 +9,7 @@
 [![Made with JavaScript](https://img.shields.io/badge/JavaScript-Vanilla%20ES6-f0db4f)](#-tech-stack)
 [![Engine: Stockfish 18 Lite](https://img.shields.io/badge/Engine-Stockfish%2018%20Lite-4d90f0)](#-analysis--engine)
 
-[Live Demo](https://usamagulzar.github.io/chex/) · [Report a Bug](https://github.com/usamagulzar/chex/issues) · [Request a Feature](https://github.com/usamagulzar/chex/issues)
+[Play Live](https://usamagulzar.github.io/chex/) · [Report a Bug](https://github.com/usamagulzar/chex/issues) · [Request a Feature](https://github.com/usamagulzar/chex/issues)
 
 ![Chex preview](preview.png)
 
