@@ -408,6 +408,18 @@ if ((isEvalVisible || isBestMoveVisible) && window.analysis && !window.variants.
     const body = document.getElementById('histBody'); body.innerHTML = '';
     const activeIdx = viewIndex - 1;
 
+    if (moveHistory.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'hist-empty';
+      empty.textContent = 'No moves yet';
+      body.appendChild(empty);
+      const prevBtn = document.getElementById('histPrevBtn');
+      const nextBtn = document.getElementById('histNextBtn');
+      if (prevBtn) prevBtn.disabled = true;
+      if (nextBtn) nextBtn.disabled = true;
+      return;
+    }
+
     // Fog of War: hide opponent moves until game ends
     const hasFog = window.variants.isFogOfWarActive && !over;
     // In online fog, myColor is the viewer; opponent is the other side
@@ -3040,8 +3052,7 @@ if (window.variants.handAndBrainEnabled && !window.variants.draftEnabled) {
         variantsTag.textContent = g.variant || 'Standard';
 
         const buttonGroup = document.createElement('div');
-        buttonGroup.style.display = 'flex';
-        buttonGroup.style.gap = '2px';
+        buttonGroup.className = 'hist-item-actions';
 
         const makeIconBtn = (svgHtml, title, extraClass) => {
           const btn = document.createElement('button');

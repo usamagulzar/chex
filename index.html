@@ -120,7 +120,23 @@
       <!-- Step 1: Main Menu -->
       <div class="setup-step" id="stepMode">
         <div class="card-hd">
-          Challenge A Friend
+          Play Chex
+        </div>
+        <div class="status-body" style="padding:14px 14px 0;">
+          <div class="segmented-control" id="modeTabBar">
+            <button class="segmented-btn active" id="modeTabOnlineBtn">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20"/></svg>
+              Online
+            </button>
+            <button class="segmented-btn" id="modeOfflineBtn">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+              Offline
+            </button>
+            <button class="segmented-btn" id="showGameHistoryBtn">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+              History
+            </button>
+          </div>
         </div>
         <div class="status-body" style="padding:14px; gap:10px">
           
@@ -142,26 +158,6 @@
             <button class="btn primary" id="sendChallengeBtn" style="width:100%; margin-top:8px; font-size:.9rem; padding:10px;">Send Challenge</button>
           </div>
 
-        </div>
-
-        <!-- Offline & History footer: same footer bar style as the Clear Board
-             control on the Move History card, so it reads as a consistent
-             piece of UI chrome rather than another item inside the form. -->
-        <div class="hist-footer">
-          <button class="hist-clear-btn" id="modeOfflineBtn" style="flex: 1;">
-            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>
-            </svg>
-            <span>Play Offline</span>
-          </button>
-          <div style="flex: 1;" id="gameHistoryContainer">
-            <button class="hist-clear-btn" id="showGameHistoryBtn" style="width:100%;">
-              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
-              </svg>
-              <span>History</span>
-            </button>
-          </div>
         </div>
       </div>
 
