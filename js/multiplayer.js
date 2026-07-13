@@ -138,7 +138,7 @@ window.multi = {
       console.warn('Cannot send challenge before Firebase auth is ready.');
       return;
     }
-    const targetLower = targetUser.toLowerCase();
+    const targetLower = targetUser.trim().toLowerCase();
     const targetSnap = await db.collection('usernames').doc(targetLower).get();
     const targetUid = targetSnap.exists && targetSnap.data() ? targetSnap.data().uid : null;
 

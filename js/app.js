@@ -1966,12 +1966,12 @@ if (window.variants && window.variants.diceChessEnabled) {
     const sendBtn = document.getElementById('sendChallengeBtn');
     if (sendBtn.disabled) return;
 
-    const targetUser = document.getElementById('connIdInput')?.value;
+    const targetUser = document.getElementById('connIdInput')?.value?.trim();
     if (!targetUser) {
       alert("Please enter a username to challenge.");
       return;
     }
-    if (window.auth && window.auth.username && targetUser.trim().toLowerCase() === window.auth.username.toLowerCase()) {
+    if (window.auth && window.auth.username && targetUser.toLowerCase() === window.auth.username.toLowerCase()) {
       alert("You can't send a challenge to yourself.");
       return;
     }
@@ -1987,12 +1987,12 @@ if (window.variants && window.variants.diceChessEnabled) {
     // Step 2: triggered by the Confirm button inside the Challenge Settings dialog.
     // Reads the chosen time control + color, then actually sends the challenge.
     const sendBtn = document.getElementById('sendChallengeBtn');
-    const targetUser = document.getElementById('connIdInput')?.value;
+    const targetUser = document.getElementById('connIdInput')?.value?.trim();
     if (!targetUser) {
       alert("Please enter a username to challenge.");
       return;
     }
-    if (window.auth && window.auth.username && targetUser.trim().toLowerCase() === window.auth.username.toLowerCase()) {
+    if (window.auth && window.auth.username && targetUser.toLowerCase() === window.auth.username.toLowerCase()) {
       alert("You can't send a challenge to yourself.");
       return;
     }
@@ -2355,8 +2355,6 @@ if (window.variants.diceChessEnabled && gameData.currentDice) {
       'decline-challenge':   ()  => this.onChallengeDeclined(),
       'move':                (d) => this.onRemoteMove(d),
       'dice-roll':           (d) => this.onDiceRoll(d),
-      'draft-lock':          (d) => this.onDraftLock(d),
-      'draft-complete-sync': (d) => this.onDraftCompleteSync(d),
       'trim-powers':         (d) => this.onTrimPowers(d),
       'propose-undo':        ()  => this.showProposal('undo'),
       'accept-undo':         ()  => this.onUndoAccepted(),
@@ -2373,7 +2371,6 @@ if (window.variants.diceChessEnabled && gameData.currentDice) {
       'timeout':             (d) => this.handleTimeOut(d.color, true),
       'request-clock-sync':  (d) => this.onClockSyncRequest(d),
       'clock-sync-response': (d) => this.onClockSyncResponse(d),
-      'state-sync':          (d) => this.onStateSync(d),
     };
     const handler = handlers[data.type];
     if (handler) handler(data);
@@ -2520,6 +2517,20 @@ onDiceRoll(data) {
   onClockSyncResponse(data) {
     if (!multi.active || multi.isHost || !window.timer) return;
     const latency = Math.max(0, (Date.now() - data.requestTimestamp) / 2);
+
+    let whiteTime = data.whiteTime;
+    let blackTime = data.blackTime;
+    if (data.activeSide === 'w') {
+      whiteTime = Math.max(0, whiteTime - latency);
+    } else if (data.activeSide === 'b') {
+      blackTime = Math.max(0, blackTime - latency);
+    }
+
+    window.timer.whiteTime = whiteTime;
+    window.timer.blackTime = blackTime;
+    window.timer.activeSide = data.activeSide;
+    window.timer.lastTick = Date.now();
+    window.timer.render();
   },
 
   applyDraftFen(color, fen) {
@@ -3063,9 +3074,16 @@ if (window.variants.handAndBrainEnabled && !window.variants.draftEnabled) {
     }
     
     window.variants.init();
-    importPgn(g.pgn);
-    
+
+    // gameState must be 'playing' BEFORE importPgn() replays the moves —
+    // isIdentityTheftActive/isDiceChessActive/isFogOfWarActive/isHandAndBrainActive
+    // all check gameState !== 'setup', and localReset() above left it as 'setup'.
+    // Replaying moves while still 'setup' silently skips variant-specific
+    // move logic (e.g. Identity Theft's type-merging on capture), so the
+    // reviewed game renders as a plain standard game.
     this.gameState = 'playing';
+    importPgn(g.pgn);
+
     over = true;
     this.isReviewMode = true;
     viewIndex = moveHistory.length;
