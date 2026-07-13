@@ -183,7 +183,9 @@ if ((isEvalVisible || isBestMoveVisible) && window.analysis && !window.variants.
     const evalToggle = document.getElementById('showEvalBarToggle');
     const bestToggle = document.getElementById('showBestMoveToggle');
     if (evalToggle && bestToggle) {
-      const hideEngineUI = (window.variants && window.variants.isIdentityTheftActive) ||
+      const isPlayingLive = (this.gameState === 'playing' && !over);
+      const hideEngineUI = isPlayingLive ||
+                           (window.variants && window.variants.isIdentityTheftActive) ||
                            (window.variants && window.variants.fogOfWarEnabled);
       evalToggle.disabled = hideEngineUI;
       bestToggle.disabled = hideEngineUI;
